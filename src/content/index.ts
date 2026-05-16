@@ -1,148 +1,149 @@
 let isExtracting = false;
+console.log('[LeadScraper] Loaded on:', window.location.hostname);
 
-console.log('Content script loaded');
+chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
 
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((request: any, sender: any, sendResponse: any) => {
-  if (request.action === 'START_EXTRACTION') {
+  // Popup pings to check if content script is alive
+  if (req.action === 'PING') {
+    sendResponse({ alive: true, url: window.location.href });
+    return true;
+  }
+
+  // Background tells us to start scraping after navigation is done
+  if (req.action === 'START_SCRAPING') {
+    if (isExtracting) { sendResponse({ status: 'already_running' }); return true; }
     isExtracting = true;
-    startGoogleMapsExtraction(request.query);
+    scrapeAllResults()
+      .catch(err => {
+        console.error('[LeadScraper]', err);
+        chrome.runtime.sendMessage({ type: 'EXTRACTION_ERROR', message: String(err) });
+      })
+      .finally(() => {
+        isExtracting = false;
+        chrome.runtime.sendMessage({ type: 'EXTRACTION_DONE' });
+      });
     sendResponse({ status: 'started' });
-  } else if (request.action === 'STOP_EXTRACTION') {
+    return true;
+  }
+
+  if (req.action === 'STOP_EXTRACTION') {
     isExtracting = false;
     sendResponse({ status: 'stopped' });
+    return true;
   }
 });
 
-async function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+// ── helpers ──────────────────────────────────────────────────────────────────
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+async function waitFor(selector: string, timeout = 15000): Promise<Element | null> {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    const el = document.querySelector(selector);
+    if (el) return el;
+    await sleep(300);
+  }
+  return null;
 }
 
-async function startGoogleMapsExtraction(query: string) {
-  if (!window.location.href.includes('google.com/maps')) {
-    alert("Please open Google Maps (https://www.google.com/maps) first before extracting.");
-    isExtracting = false;
+// ── main scrape loop ──────────────────────────────────────────────────────────
+async function scrapeAllResults() {
+  // Wait for the results feed
+  const feed = await waitFor('div[role="feed"]', 20000);
+  if (!feed) {
+    chrome.runtime.sendMessage({ type: 'EXTRACTION_ERROR', message: 'Results did not load. Make sure you are on a Google Maps search results page.' });
     return;
   }
 
-  // 1. Enter search query
-  const searchInput = document.querySelector('input#searchboxinput') as HTMLInputElement;
-  const searchBtn = document.querySelector('button#searchbox-searchbutton') as HTMLButtonElement;
+  await sleep(2000); // let first batch render
 
-  if (searchInput && searchBtn) {
-    searchInput.value = query;
-    // trigger input event so React/JS catches it
-    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    await sleep(500);
-    searchBtn.click();
-    await sleep(4000); // Wait for initial results to load
-  }
+  const seen = new Set<string>();
+  let stuckCount = 0;
 
-  // 2. Process feed
-  let processedItems = new Set<string>();
-  
   while (isExtracting) {
-    const feed = document.querySelector('div[role="feed"]');
-    if (!feed) {
-      console.log('No feed found. Retrying in 2s...');
-      await sleep(2000);
+    const links = Array.from(
+      feed.querySelectorAll<HTMLAnchorElement>('a[href*="/maps/place/"]')
+    ).filter(a => a.href && !seen.has(a.href));
+
+    if (links.length === 0) {
+      // scroll to load more
+      const before = feed.scrollTop;
+      feed.scrollTop += 800;
+      await sleep(3000);
+      const scrolled = Math.abs(feed.scrollTop - before);
+      if (scrolled < 30) {
+        stuckCount++;
+        if (stuckCount >= 3) break; // end of list
+      } else {
+        stuckCount = 0;
+      }
       continue;
     }
 
-    // Find all clickable place links in the feed
-    const items = Array.from(feed.querySelectorAll('a')).filter(a => a.href && a.href.includes('/maps/place/'));
-    
-    let hasNewItems = false;
+    stuckCount = 0;
 
-    for (const item of items) {
+    for (const link of links) {
       if (!isExtracting) break;
-      
-      const itemUrl = item.href;
-      if (processedItems.has(itemUrl)) continue;
-      
-      hasNewItems = true;
-      processedItems.add(itemUrl);
+      seen.add(link.href);
 
-      // Scroll item into view and click
-      item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      link.scrollIntoView({ behavior: 'smooth', block: 'center' });
       await sleep(500);
-      item.click();
-      
-      await sleep(3000); // Wait for the detail panel to slide in
+      link.click();
 
-      // Extract details from the panel
-      const lead = extractCurrentDetailView();
+      // Wait until the detail panel title appears
+      await waitFor('h1', 10000);
+      await sleep(2000); // extra time for phone/website to load
+
+      const lead = extractLead();
+      console.log('[LeadScraper] Got:', lead);
       if (lead.name) {
         chrome.runtime.sendMessage({ type: 'SAVE_LEAD', payload: lead });
       }
 
       // Go back to the list
-      // Back button in the detail panel usually has an aria-label like "Back" or "Close"
-      const backBtn = document.querySelector('button[aria-label="Back"]') as HTMLButtonElement || 
-                      document.querySelector('button[aria-label="Back to results"]') as HTMLButtonElement ||
-                      document.querySelector('button[aria-label="Close"]') as HTMLButtonElement;
-      
+      const backBtn =
+        document.querySelector<HTMLButtonElement>('button[aria-label="Back"]') ??
+        document.querySelector<HTMLButtonElement>('button[aria-label="Back to results"]');
+
       if (backBtn) {
         backBtn.click();
-        await sleep(2000); // Wait for list to return
       } else {
-        console.log("Back button not found, trying to continue...");
+        window.history.back();
       }
-    }
-
-    // If no new items were processed in this loop, scroll to load more
-    if (!hasNewItems) {
-      const previousScrollTop = feed.scrollTop;
-      feed.scrollTop = feed.scrollHeight;
-      await sleep(3000); // Wait for new items to fetch and render
-      
-      // If scroll didn't move much, we might be at the end
-      if (feed.scrollTop - previousScrollTop < 10) {
-        const endText = document.body.innerText.includes("You've reached the end of the list");
-        if (endText) {
-          console.log("Reached the end of the list.");
-          break;
-        }
-      }
+      await sleep(2000);
     }
   }
-  
-  console.log("Extraction finished or stopped.");
-  isExtracting = false;
+  console.log('[LeadScraper] Done. Total seen:', seen.size);
 }
 
-function extractCurrentDetailView() {
-  const lead = {
-    source: 'Google Maps',
-    name: '',
-    phone: '',
-    email: '', // Always empty as Google Maps doesn't provide it
-    website: '',
-    address: ''
-  };
+// ── extract data from the open detail panel ───────────────────────────────────
+function extractLead() {
+  const lead = { source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
 
-  // Name is usually in an h1 tag
-  const h1 = document.querySelector('h1');
-  if (h1) lead.name = h1.textContent?.trim() || '';
+  // Name
+  lead.name = document.querySelector('h1')?.textContent?.trim() ?? '';
 
-  // Phone: Look for buttons with data-tooltip containing "phone" or "Copy phone number"
-  const phoneBtn = document.querySelector('button[data-tooltip*="phone number" i], button[data-item-id^="phone:tel:"]');
-  if (phoneBtn) {
-    const rawText = phoneBtn.getAttribute('aria-label') || phoneBtn.textContent || '';
-    lead.phone = rawText.replace(/.*phone number:?\s*/i, '').trim();
+  // Phone — data-item-id = "phone:tel:+8801..."
+  const phoneEl = document.querySelector('[data-item-id^="phone:tel:"]');
+  if (phoneEl) {
+    const id = phoneEl.getAttribute('data-item-id') ?? '';
+    lead.phone = id.replace('phone:tel:', '').trim() ||
+      phoneEl.getAttribute('aria-label')?.replace(/^phone(:?\s*number)?:?\s*/i, '').trim() || '';
   }
 
-  // Website: Look for links with data-tooltip containing "website"
-  const webLink = document.querySelector('a[data-tooltip*="website" i], a[data-item-id="authority"]');
-  if (webLink) {
-    lead.website = (webLink as HTMLAnchorElement).href;
-  }
+  // Website
+  const webEl = document.querySelector<HTMLAnchorElement>(
+    'a[data-item-id="authority"], a[aria-label*="website" i]'
+  );
+  lead.website = webEl?.href ?? '';
 
-  // Address: Look for buttons with data-tooltip containing "address"
-  const addrBtn = document.querySelector('button[data-tooltip*="address" i], button[data-item-id="address"]');
-  if (addrBtn) {
-    const rawText = addrBtn.getAttribute('aria-label') || addrBtn.textContent || '';
-    lead.address = rawText.replace(/.*address:?\s*/i, '').trim();
+  // Address
+  const addrEl = document.querySelector(
+    'button[data-item-id="address"], button[aria-label*="address" i]'
+  );
+  if (addrEl) {
+    lead.address = addrEl.getAttribute('aria-label')?.replace(/^address:?\s*/i, '').trim() ||
+      addrEl.textContent?.trim() || '';
   }
 
   return lead;

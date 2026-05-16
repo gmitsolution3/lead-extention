@@ -20,7 +20,8 @@
     "activeTab",
     "storage",
     "scripting",
-    "downloads"
+    "downloads",
+    "tabs"
   ],
   "host_permissions": [
     "https://*/*",
