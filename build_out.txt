@@ -1,0 +1,301 @@
+
+> extension@0.0.0 build
+> tsc -b && vite build
+
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vite.config.ts:15:25). Use `import.meta.dirname` instead
+  - JSON import "./manifest.json" without import attributes (vite.config.ts:5:22). Add `with { type: 'json' }`
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+[36mvite v8.2.1 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 1798 modules transformed.
+[33m[lightningcss minify] Unknown at rule: @theme
+1  |  ...translate-y{syntax:"*";inherits:false;initial-value:0}@theme inline{--animation-delay-0: 0s; --animation-delay-75:...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...0%,70%,100% { opacity: 1; }20%,50% { opacity: 0; }}}@utility animation-duration-*{--tw-animation-duration: calc(--...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...e(--animation-duration-*,[duration],"initial",[*]);}@utility delay-*{animation-delay: calc(--value(number)*1ms); a...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...alue(--animation-delay-*,[duration],"initial",[*]);}@utility repeat-*{animation-iteration-count: --value(--animati...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...--value(--animation-repeat-*,number,"initial",[*]);}@utility direction-*{animation-direction: --value(--animation-...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...on: --value(--animation-direction-*,"initial",[*]);}@utility fill-mode-*{animation-fill-mode: --value(--animation-...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...de: --value(--animation-fill-mode-*,"initial",[*]);}@utility running{animation-play-state: running;}@utility pause...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...]);}@utility running{animation-play-state: running;}@utility paused{animation-play-state: paused;}@utility play-st...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ning;}@utility paused{animation-play-state: paused;}@utility play-state-*{animation-play-state: --value("initial",...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ate-*{animation-play-state: --value("initial",[*]);}@utility blur-in{--tw-enter-blur: 20px;}@utility blur-in-*{--t...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...tial",[*]);}@utility blur-in{--tw-enter-blur: 20px;}@utility blur-in-*{--tw-enter-blur: calc(--value(number)*1px);...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...mber)*1px); --tw-enter-blur: --value(--blur-*,[*]);}@utility blur-out{--tw-exit-blur: 20px;}@utility blur-out-*{--...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...lur-*,[*]);}@utility blur-out{--tw-exit-blur: 20px;}@utility blur-out-*{--tw-exit-blur: calc(--value(number)*1px);...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...umber)*1px); --tw-exit-blur: --value(--blur-*,[*]);}@utility fade-in{--tw-enter-opacity: 0;}@utility fade-in-*{--t...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...lur-*,[*]);}@utility fade-in{--tw-enter-opacity: 0;}@utility fade-in-*{--tw-enter-opacity: calc(--value(number)/10...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...); --tw-enter-opacity: --value(--percentage-*,[*]);}@utility fade-out{--tw-exit-opacity: 0;}@utility fade-out-*{--...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...age-*,[*]);}@utility fade-out{--tw-exit-opacity: 0;}@utility fade-out-*{--tw-exit-opacity: calc(--value(number)/10...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...0); --tw-exit-opacity: --value(--percentage-*,[*]);}@utility zoom-in{--tw-enter-scale: 0;}@utility zoom-in-*{--tw-...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ntage-*,[*]);}@utility zoom-in{--tw-enter-scale: 0;}@utility zoom-in-*{--tw-enter-scale: calc(--value(number)*1%);...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...o)); --tw-enter-scale: --value(--percentage-*,[*]);}@utility -zoom-in-*{--tw-enter-scale: calc(--value(number)*-1%...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...-1); --tw-enter-scale: --value(--percentage-*,[*]);}@utility zoom-out{--tw-exit-scale: 0;}@utility zoom-out-*{--tw...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ntage-*,[*]);}@utility zoom-out{--tw-exit-scale: 0;}@utility zoom-out-*{--tw-exit-scale: calc(--value(number)*1%);...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...io)); --tw-exit-scale: --value(--percentage-*,[*]);}@utility -zoom-out-*{--tw-exit-scale: calc(--value(number)*-1%...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...*-1); --tw-exit-scale: --value(--percentage-*,[*]);}@utility spin-in{--tw-enter-rotate: 30deg;}@utility spin-in-*{...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...-*,[*]);}@utility spin-in{--tw-enter-rotate: 30deg;}@utility spin-in-*{--tw-enter-rotate: calc(--value(number)*1de...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...60deg); --tw-enter-rotate: --value(--rotate-*,[*]);}@utility -spin-in{--tw-enter-rotate: -30deg;}@utility -spin-in...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...,[*]);}@utility -spin-in{--tw-enter-rotate: -30deg;}@utility -spin-in-*{--tw-enter-rotate: calc(--value(number)*-1...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...60deg); --tw-enter-rotate: --value(--rotate-*,[*]);}@utility spin-out{--tw-exit-rotate: 30deg;}@utility spin-out-*...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...-*,[*]);}@utility spin-out{--tw-exit-rotate: 30deg;}@utility spin-out-*{--tw-exit-rotate: calc(--value(number)*1de...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...360deg); --tw-exit-rotate: --value(--rotate-*,[*]);}@utility -spin-out{--tw-exit-rotate: -30deg;}@utility -spin-ou...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...,[*]);}@utility -spin-out{--tw-exit-rotate: -30deg;}@utility -spin-out-*{--tw-exit-rotate: calc(--value(number)*-1...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...360deg); --tw-exit-rotate: --value(--rotate-*,[*]);}@utility slide-in-from-top{--tw-enter-translate-y: -100%;}@uti...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ty slide-in-from-top{--tw-enter-translate-y: -100%;}@utility slide-in-from-top-*{--tw-enter-translate-y: calc(--va...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility slide-in-from-bottom{--tw-enter-translate-y: 100%;}@u...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ... slide-in-from-bottom{--tw-enter-translate-y: 100%;}@utility slide-in-from-bottom-*{--tw-enter-translate-y: calc(-...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...te-y: --value(--translate-*,[percentage],[length]);}@utility slide-in-from-left{--tw-enter-translate-x: -100%;}@ut...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...y slide-in-from-left{--tw-enter-translate-x: -100%;}@utility slide-in-from-left-*{--tw-enter-translate-x: calc(--v...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility slide-in-from-right{--tw-enter-translate-x: 100%;}@ut...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...y slide-in-from-right{--tw-enter-translate-x: 100%;}@utility slide-in-from-right-*{--tw-enter-translate-x: calc(--...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...te-x: --value(--translate-*,[percentage],[length]);}@utility slide-in-from-start{&:dir(ltr){ --tw-enter-translate-...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...-100%; }&:dir(rtl){ --tw-enter-translate-x: 100%; }}@utility slide-in-from-start-*{&:where(:dir(ltr),[dir="ltr"],[...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...-x: --value(--translate-*,[percentage],[length]); }}@utility slide-in-from-end{&:dir(ltr){ --tw-enter-translate-x:...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...100%; }&:dir(rtl){ --tw-enter-translate-x: -100%; }}@utility slide-in-from-end-*{&:where(:dir(ltr),[dir="ltr"],[di...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...--value(--translate-*,[percentage],[length])*-1); }}@utility slide-out-to-top{--tw-exit-translate-y: -100%;}@utili...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...lity slide-out-to-top{--tw-exit-translate-y: -100%;}@utility slide-out-to-top-*{--tw-exit-translate-y: calc(--valu...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility slide-out-to-bottom{--tw-exit-translate-y: 100%;}@uti...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ty slide-out-to-bottom{--tw-exit-translate-y: 100%;}@utility slide-out-to-bottom-*{--tw-exit-translate-y: calc(--v...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...te-y: --value(--translate-*,[percentage],[length]);}@utility slide-out-to-left{--tw-exit-translate-x: -100%;}@util...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ity slide-out-to-left{--tw-exit-translate-x: -100%;}@utility slide-out-to-left-*{--tw-exit-translate-x: calc(--val...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...c(--value(--translate-*,[percentage],[length])*-1);}@utility slide-out-to-right{--tw-exit-translate-x: 100%;}@util...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...ity slide-out-to-right{--tw-exit-translate-x: 100%;}@utility slide-out-to-right-*{--tw-exit-translate-x: calc(--va...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...te-x: --value(--translate-*,[percentage],[length]);}@utility slide-out-to-start{&:dir(ltr){ --tw-exit-translate-x:...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ... -100%; }&:dir(rtl){ --tw-exit-translate-x: 100%; }}@utility slide-out-to-start-*{&:where(:dir(ltr),[dir="ltr"],[d...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ...-x: --value(--translate-*,[percentage],[length]); }}@utility slide-out-to-end{&:dir(ltr){ --tw-exit-translate-x: 1...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+[33m[lightningcss minify] Unknown at rule: @utility
+1  |  ... 100%; }&:dir(rtl){ --tw-exit-translate-x: -100%; }}@utility slide-out-to-end-*{&:where(:dir(ltr),[dir="ltr"],[dir...
+   |                                                                 ^
+2  |  /* geist-cyrillic-ext-wght-normal */
+3  |  @font-face {[39m
+rendering chunks...
+computing gzip size...
+dist/service-worker-loader.js                                0.04 kB
+dist/index.html                                              0.47 kB │ gzip:  0.30 kB
+dist/manifest.json                                           1.00 kB │ gzip:  0.44 kB
+dist/assets/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2    7.42 kB
+dist/assets/geist-vietnamese-wght-normal-6IgcOCM7.woff2      8.00 kB
+dist/assets/geist-cyrillic-wght-normal-BEAKL7Jp.woff2       15.08 kB
+dist/assets/geist-latin-ext-wght-normal-DC-KSUi6.woff2      16.51 kB
+dist/assets/geist-latin-wght-normal-BgDaEnEv.woff2          29.40 kB
+dist/assets/index-_QGHXGg9.css                              32.45 kB │ gzip:  6.59 kB
+dist/assets/background.ts-PBxZl3LK.js                        3.87 kB │ gzip:  1.57 kB
+dist/assets/index.ts-C3Hu_HdO.js                             6.86 kB │ gzip:  2.46 kB
+dist/assets/index.html-Dxl0LiB1.js                         200.81 kB │ gzip: 63.47 kB
+
+[32m✓ built in 2.51s[39m

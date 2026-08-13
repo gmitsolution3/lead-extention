@@ -1,55 +1,174 @@
 export interface Lead {
-  source: string; name: string; phone: string;
-  email: string; website: string; address?: string;
+  source: string;
+  name: string;
+  phone: string;
+  email: string;
+  website: string;
+  address?: string;
 }
 
-// ── storage helpers ───────────────────────────────────────────────────────────
+// ── Storage helpers ───────────────────────────────────────────────────────────
 const getLeads = (): Promise<Lead[]> =>
   new Promise(r => chrome.storage.local.get(['leads'], d => r((d.leads as Lead[]) || [])));
 
 const saveLeads = (leads: Lead[]): Promise<void> =>
   new Promise(r => chrome.storage.local.set({ leads }, r));
 
-// ── message hub ──────────────────────────────────────────────────────────────
+// ── Resilient message delivery to content script ─────────────────────────────
+function sendStartScrapingWithRetry(tabId: number, retries = 30) {
+  let attempts = 0;
+  const interval = setInterval(() => {
+    attempts++;
+    chrome.tabs.sendMessage(tabId, { action: 'PING' }, response => {
+      const err = chrome.runtime.lastError;
+      if (err || !response?.alive) {
+        if (attempts >= retries) {
+          clearInterval(interval);
+          chrome.runtime.sendMessage({
+            type: 'EXTRACTION_ERROR',
+            message: 'Failed to connect to page content script. Please try refreshing the tab.'
+          }, () => {
+            if (chrome.runtime.lastError) {}
+          });
+        }
+        return;
+      }
+      // Content script is alive and responding!
+      clearInterval(interval);
+      chrome.tabs.sendMessage(tabId, { action: 'START_SCRAPING' }, res => {
+        if (chrome.runtime.lastError) {}
+        console.log('[BG] START_SCRAPING response:', res);
+      });
+    });
+  }, 500);
+}
+
+// ── Helper to handle tab update with pre-registered listener (Race Condition Fix) ──
+function navigateTabAndScrape(tabId: number, targetUrl: string) {
+  let navigationHandled = false;
+
+  const onUpdated = (id: number, info: { status?: string }) => {
+    if (id !== tabId || info.status !== 'complete') return;
+    navigationHandled = true;
+    chrome.tabs.onUpdated.removeListener(onUpdated);
+    clearTimeout(navTimeout);
+    sendStartScrapingWithRetry(tabId);
+  };
+
+  // Register listener BEFORE triggering navigation (fixes race condition)
+  chrome.tabs.onUpdated.addListener(onUpdated);
+
+  // Safety fallback timeout so popup never hangs forever
+  const navTimeout = setTimeout(() => {
+    if (navigationHandled) return;
+    chrome.tabs.onUpdated.removeListener(onUpdated);
+    sendStartScrapingWithRetry(tabId);
+  }, 15000);
+
+  chrome.tabs.update(tabId, { url: targetUrl }, () => {
+    if (chrome.runtime.lastError) {
+      console.error('[BG] tabs.update failed:', chrome.runtime.lastError.message);
+      navigationHandled = true;
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      clearTimeout(navTimeout);
+      chrome.runtime.sendMessage({
+        type: 'EXTRACTION_ERROR',
+        message: 'Could not navigate tab: ' + chrome.runtime.lastError.message
+      }, () => {
+        if (chrome.runtime.lastError) {}
+      });
+    }
+  });
+}
+
+// ── Message hub ──────────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
 
-  // ── START_SEARCH: navigate the tab then tell content script to scrape ──────
+  // ── START_SEARCH: navigate tab if needed then trigger scraper ──────────────
   if (req.type === 'START_SEARCH') {
     const { query, tabId } = req;
-    const url = `https://www.google.com/maps/search/${encodeURIComponent(query)}/`;
+    const targetUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}/`;
 
-    chrome.tabs.update(tabId, { url }, () => {
-      const onUpdated = (id: number, info: { status?: string }) => {
-        if (id !== tabId || info.status !== 'complete') return;
-        chrome.tabs.onUpdated.removeListener(onUpdated);
+    const handleNavigation = (validTabId: number) => {
+      chrome.tabs.get(validTabId, tab => {
+        if (chrome.runtime.lastError || !tab) {
+          console.error('[BG] tab get error:', chrome.runtime.lastError?.message);
+          return;
+        }
 
-        // Give Google Maps JS time to render the feed
-        setTimeout(() => {
-          chrome.tabs.sendMessage(tabId, { action: 'START_SCRAPING' }, (res: unknown) => {
-            console.log('[BG] START_SCRAPING response:', res);
-          });
-        }, 4000);
-      };
-      chrome.tabs.onUpdated.addListener(onUpdated);
-    });
+        if (tab.url && tab.url.includes('google.com/maps/search/')) {
+          if (tab.url !== targetUrl) {
+            navigateTabAndScrape(validTabId, targetUrl);
+          } else {
+            sendStartScrapingWithRetry(validTabId);
+          }
+        } else {
+          navigateTabAndScrape(validTabId, targetUrl);
+        }
+      });
+    };
+
+    if (tabId) {
+      handleNavigation(tabId);
+    } else {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
+        if (tabs[0]?.id) handleNavigation(tabs[0].id);
+      });
+    }
 
     sendResponse({ status: 'navigating' });
-    return true;
+    return false; // Return false because sendResponse was called synchronously
   }
 
   // ── STOP: forward stop to content script ─────────────────────────────────
   if (req.type === 'STOP_SEARCH') {
-    chrome.tabs.sendMessage(req.tabId, { action: 'STOP_EXTRACTION' });
+    if (req.tabId) {
+      chrome.tabs.sendMessage(req.tabId, { action: 'STOP_EXTRACTION' }, () => {
+        if (chrome.runtime.lastError) {}
+      });
+    }
     sendResponse({ status: 'stopping' });
-    return true;
+    return false;
   }
 
-  // ── SAVE_LEAD ─────────────────────────────────────────────────────────────
+  // ── SAVE_LEAD (Fixed Deduplication Bug) ───────────────────────────────────
   if (req.type === 'SAVE_LEAD') {
     (async () => {
+      const newLead = req.payload as Lead;
+      if (!newLead || !newLead.name) {
+        sendResponse({ status: 'ignored' });
+        return;
+      }
+
       const leads = await getLeads();
-      leads.push(req.payload as Lead);
-      await saveLeads(leads);
+      const normName = newLead.name.trim().toLowerCase();
+      const normPhone = (newLead.phone || '').trim();
+      const normWeb = (newLead.website || '').trim().toLowerCase();
+      const normAddr = (newLead.address || '').trim();
+
+      const isDuplicate = leads.some(l => {
+        const sameName = l.name.trim().toLowerCase() === normName;
+        const normExistingPhone = (l.phone || '').trim();
+        const samePhone = normPhone.length >= 7 && normExistingPhone.length >= 7 && normPhone === normExistingPhone;
+        const normExistingWeb = (l.website || '').trim().toLowerCase();
+        const sameWeb = normWeb.length > 10 && normWeb === normExistingWeb;
+
+        // 1. Same phone number = strong duplicate signal
+        if (samePhone) return true;
+        // 2. Same exact name AND same website = duplicate
+        if (sameName && sameWeb) return true;
+        // 3. Same exact name AND detailed matching address (>15 chars) = duplicate
+        if (sameName && normAddr.length > 15 && l.address && l.address.trim() === normAddr) return true;
+        // NOTE: Removed condition 4 (same name + no contact = duplicate).
+        // Name alone is too weak — stale panel timing caused false positives.
+
+        return false;
+      });
+
+      if (!isDuplicate) {
+        leads.push(newLead);
+        await saveLeads(leads);
+      }
       sendResponse({ status: 'ok', count: leads.length });
     })();
     return true;
@@ -69,8 +188,11 @@ chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
 
   // ── Forward DONE / ERROR to popup ────────────────────────────────────────
   if (req.type === 'EXTRACTION_DONE' || req.type === 'EXTRACTION_ERROR') {
-    // chrome.runtime.sendMessage broadcasts to the popup if it's open
-    chrome.runtime.sendMessage(req).catch(() => {});
+    chrome.runtime.sendMessage(req, () => {
+      if (chrome.runtime.lastError) {
+        // Popup is closed, ignore error cleanly
+      }
+    });
     return false;
   }
 
@@ -84,7 +206,8 @@ chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
           .map(v => `"${(v || '').replace(/"/g, '""')}"`)
           .join(',')
       );
-      const csv = ['Source,Name,Phone,Email,Website,Address', ...rows].join('\n');
+      // \uFEFF is UTF-8 Byte Order Mark for proper rendering in Excel
+      const csv = '\uFEFF' + ['Source,Name,Phone,Email,Website,Address', ...rows].join('\n');
       chrome.downloads.download({
         url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
         filename: `leads_${Date.now()}.csv`,

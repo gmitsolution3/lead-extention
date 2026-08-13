@@ -10,6 +10,38 @@ interface Lead {
   address?: string
 }
 
+// ── Retry helper: MV3 service workers can sleep; retry until they respond ──────
+function sendMessageWithRetry(
+  msg: object,
+  callback?: (res: any) => void,
+  retries = 5,
+  delayMs = 300
+) {
+  const attempt = (remaining: number) => {
+    try {
+      chrome.runtime.sendMessage(msg, (res) => {
+        if (chrome.runtime.lastError) {
+          const errMsg = chrome.runtime.lastError.message || ''
+          if (remaining > 0 && errMsg.includes('Receiving end does not exist')) {
+            setTimeout(() => attempt(remaining - 1), delayMs)
+          } else {
+            callback?.(undefined)
+          }
+          return
+        }
+        callback?.(res)
+      })
+    } catch {
+      if (remaining > 0) {
+        setTimeout(() => attempt(remaining - 1), delayMs)
+      } else {
+        callback?.(undefined)
+      }
+    }
+  }
+  attempt(retries)
+}
+
 type Status = 'idle' | 'extracting' | 'done' | 'error'
 
 // Detect which platform is open in the active tab
@@ -28,18 +60,21 @@ function App() {
   const [platform, setPlatform]     = useState('Unknown')
   const [tabId, setTabId]           = useState<number | null>(null)
 
-  // ── Fetch active tab info ─────────────────────────────────────────────────
+  // ── Fetch active browser tab info ──────────────────────────────────────────
   useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      const tab = tabs[0]
-      if (tab?.url) setPlatform(detectPlatform(tab.url))
-      if (tab?.id)  setTabId(tab.id)
-    })
+    try {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
+        if (chrome.runtime.lastError) return
+        const tab = tabs[0]
+        if (tab?.url) setPlatform(detectPlatform(tab.url))
+        if (tab?.id)  setTabId(tab.id)
+      })
+    } catch {}
   }, [])
 
   // ── Load stored leads ─────────────────────────────────────────────────────
   const refreshLeads = useCallback(() => {
-    chrome.runtime.sendMessage({ type: 'GET_LEADS' }, res => {
+    sendMessageWithRetry({ type: 'GET_LEADS' }, res => {
       if (res?.leads) setLeads(res.leads)
     })
   }, [])
@@ -73,27 +108,62 @@ function App() {
 
   // ── Start extraction ──────────────────────────────────────────────────────
   const handleStart = () => {
-    if (!query.trim() || !tabId) return
+    if (!query.trim()) return
     setStatus('extracting')
     setErrorMsg('')
-    // Send to background — it will navigate the tab then trigger scraping
-    chrome.runtime.sendMessage({ type: 'START_SEARCH', query: query.trim(), tabId })
+
+    const sendStartCmd = (targetTabId: number) => {
+      sendMessageWithRetry(
+        { type: 'START_SEARCH', query: query.trim(), tabId: targetTabId },
+        res => {
+          if (!res) {
+            setStatus('error')
+            setErrorMsg('Could not connect to background service. Please reload the extension.')
+          } else if (res?.status === 'error') {
+            setStatus('error')
+            setErrorMsg(res.message || 'Invalid tab.')
+          }
+        }
+      )
+    }
+
+    if (tabId) {
+      sendStartCmd(tabId)
+    } else {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, tabs => {
+        const id = tabs[0]?.id
+        if (id) {
+          setTabId(id)
+          sendStartCmd(id)
+        } else {
+          setStatus('error')
+          setErrorMsg('No active tab found.')
+        }
+      })
+    }
   }
 
   // ── Stop extraction ───────────────────────────────────────────────────────
   const handleStop = () => {
     setStatus('idle')
-    if (tabId) chrome.runtime.sendMessage({ type: 'STOP_SEARCH', tabId })
+    if (tabId) {
+      sendMessageWithRetry({ type: 'STOP_SEARCH', tabId })
+    }
   }
 
   // ── Clear leads ───────────────────────────────────────────────────────────
   const handleClear = () => {
-    chrome.runtime.sendMessage({ type: 'CLEAR_LEADS' }, () => setLeads([]))
+    sendMessageWithRetry({ type: 'CLEAR_LEADS' }, () => setLeads([]))
   }
 
   // ── Exports ───────────────────────────────────────────────────────────────
-  const handleExportCSV = () => chrome.runtime.sendMessage({ type: 'EXPORT_CSV' })
-  const handleExportXML = () => chrome.runtime.sendMessage({ type: 'EXPORT_XML' })
+  const handleExportCSV = () => {
+    sendMessageWithRetry({ type: 'EXPORT_CSV' })
+  }
+
+  const handleExportXML = () => {
+    sendMessageWithRetry({ type: 'EXPORT_XML' })
+  }
 
   const isExtracting = status === 'extracting'
   const platformColor =
@@ -141,8 +211,8 @@ function App() {
         {!isExtracting ? (
           <button
             onClick={handleStart}
-            disabled={!query.trim() || platform === 'Unknown'}
-            className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold transition flex items-center justify-center gap-2"
+            disabled={!query.trim()}
+            className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
           >
             <Search className="h-4 w-4" />
             Start Extraction
@@ -150,7 +220,7 @@ function App() {
         ) : (
           <button
             onClick={handleStop}
-            className="w-full h-10 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold transition flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
           >
             <Loader2 className="h-4 w-4 animate-spin" />
             Stop Extraction
@@ -173,7 +243,7 @@ function App() {
         {isExtracting && (
           <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-400/10 border border-blue-500/30 rounded-lg px-3 py-2">
             <Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" />
-            Extracting… {leads.length} lead{leads.length !== 1 ? 's' : ''} so far
+            Navigating & Extracting… {leads.length} lead{leads.length !== 1 ? 's' : ''} collected
           </div>
         )}
       </div>

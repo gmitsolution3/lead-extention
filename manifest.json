@@ -7,24 +7,20 @@
     "default_popup": "index.html"
   },
   "background": {
-    "service_worker": "src/background/index.ts",
+    "service_worker": "src/background/background.ts",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/index.ts"]
+      "matches": ["https://*/*", "http://*/*"],
+      "exclude_matches": [
+        "https://chrome.google.com/*",
+        "https://chromewebstore.google.com/*"
+      ],
+      "js": ["src/content/index.ts"],
+      "run_at": "document_idle"
     }
   ],
-  "permissions": [
-    "activeTab",
-    "storage",
-    "scripting",
-    "downloads",
-    "tabs"
-  ],
-  "host_permissions": [
-    "https://*/*",
-    "http://*/*"
-  ]
+  "permissions": ["activeTab", "storage", "scripting", "downloads", "tabs"],
+  "host_permissions": ["https://*/*", "http://*/*"]
 }
