@@ -21,6 +21,6 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["activeTab", "storage", "scripting", "downloads", "tabs"],
+  "permissions": ["storage", "tabs", "downloads", "scripting"],
   "host_permissions": ["https://*/*", "http://*/*"]
 }

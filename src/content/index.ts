@@ -5,6 +5,11 @@ try {
   const getBodyText = () =>
     document.body?.textContent || document.documentElement?.textContent || "";
 
+  // ── Helpers & Anti-Bot Protection ──────────────────────────────────────────
+  const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+  const jitter = (min: number, max: number) =>
+    sleep(Math.floor(Math.random() * (max - min + 1) + min));
+
   // ── Message listener ───────────────────────────────────────────────────────
   chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
     try {
@@ -13,16 +18,30 @@ try {
         return true;
       }
       if (req.action === "START_SCRAPING") {
-        if (isExtracting) { sendResponse({ status: "already_running" }); return true; }
+        if (isExtracting) {
+          sendResponse({ status: "already_running" });
+          return true;
+        }
         isExtracting = true;
         startScrapeProcess()
           .catch((err) => {
             console.error("[LeadScraper] Error:", err);
-            chrome.runtime.sendMessage({ type: "EXTRACTION_ERROR", message: String(err?.message || err) }, () => { chrome.runtime.lastError; });
+            chrome.runtime.sendMessage(
+              { type: "EXTRACTION_ERROR", message: String(err?.message || err) },
+              () => {
+                if (chrome.runtime.lastError) {
+                  /* ignore */
+                }
+              }
+            );
           })
           .finally(() => {
             isExtracting = false;
-            chrome.runtime.sendMessage({ type: "EXTRACTION_DONE" }, () => { chrome.runtime.lastError; });
+            chrome.runtime.sendMessage({ type: "EXTRACTION_DONE" }, () => {
+              if (chrome.runtime.lastError) {
+                /* ignore */
+              }
+            });
           });
         sendResponse({ status: "started" });
         return true;
@@ -37,12 +56,9 @@ try {
     }
   });
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
   async function waitFor(selector: string, timeout = 12000): Promise<Element | null> {
     const end = Date.now() + timeout;
-    while (Date.now() < end) {
+    while (Date.now() < end && isExtracting) {
       const el = document.querySelector(selector);
       if (el) return el;
       await sleep(300);
@@ -53,18 +69,15 @@ try {
   // Wait for h1 to change to a DIFFERENT value than prevText (means panel updated)
   async function waitForPanelUpdate(prevH1Text: string, timeout = 5000): Promise<void> {
     const end = Date.now() + timeout;
-    while (Date.now() < end) {
+    while (Date.now() < end && isExtracting) {
       const h1 = getDetailPanelH1();
-      if (h1 && h1 !== prevH1Text) return; // panel updated!
+      if (h1 && h1 !== prevH1Text) return;
       await sleep(150);
     }
-    // fallback
-    await sleep(800);
   }
 
   // Get the h1 from the detail panel only (not the search results title)
   function getDetailPanelH1(): string {
-    // Google Maps detail panel is inside these containers
     const panel =
       document.querySelector('div[role="main"] div.m6QEdf') ||
       document.querySelector('div.bJ2h1d') ||
@@ -76,13 +89,52 @@ try {
       if (h1?.textContent?.trim()) return h1.textContent.trim();
     }
 
-    // Broader fallback
     const h1 = document.querySelector('h1.DUwDvf, h1.fontTitleLarge');
     return h1?.textContent?.trim() || '';
   }
 
   const PHONE_REGEX = /(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/g;
   const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+  // ── Clean Name Parser (replaces broken double split) ──────────────────────
+  function parseCardName(rawText: string): string {
+    if (!rawText) return "";
+    // Google Maps separates card title from rating/category with middle dot, bullet, or pipe
+    const firstChunk = rawText.split(/[·•|\n]/)[0].trim();
+
+    // Strip ratings, review counts, stars if present in the chunk
+    const cleaned = firstChunk
+      .replace(/★\s*[\d.]+/g, "")
+      .replace(/\b\d\.\d\s*(\([\d,]+\))?/g, "")
+      .replace(/\([\d,]+\)/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return cleaned || firstChunk;
+  }
+
+  // ── Google Domain Filter ──────────────────────────────────────────────────
+  function isInternalGoogleDomain(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      return (
+        host === "google.com" ||
+        host.endsWith(".google.com") ||
+        host.includes(".google.") ||
+        host.endsWith("gstatic.com") ||
+        host.endsWith("ggpht.com") ||
+        host.endsWith("googleusercontent.com") ||
+        host.endsWith("goo.gl")
+      );
+    } catch {
+      return (
+        url.includes("google.com") ||
+        url.includes("gstatic.com") ||
+        url.includes("ggpht.com")
+      );
+    }
+  }
 
   // ── Main orchestrator ──────────────────────────────────────────────────────
   async function startScrapeProcess() {
@@ -108,20 +160,27 @@ try {
     }
 
     if (!feed) {
-      // Single place view
+      // Single place view fallback
       const singleLead = extractFromDetailPanel();
       if (singleLead?.name) {
         saveLead(singleLead);
         return;
       }
-      chrome.runtime.sendMessage({
-        type: "EXTRACTION_ERROR",
-        message: "Google Maps search results not found. Please open a search page first.",
-      }, () => { chrome.runtime.lastError; });
+      chrome.runtime.sendMessage(
+        {
+          type: "EXTRACTION_ERROR",
+          message: "Google Maps search results not found. Please open a search page first.",
+        },
+        () => {
+          if (chrome.runtime.lastError) {
+            /* ignore */
+          }
+        }
+      );
       return;
     }
 
-    await sleep(1200);
+    await jitter(1000, 1500);
 
     // Track processed places by their unique place-ID in href
     const processedIds = new Set<string>();
@@ -140,11 +199,16 @@ try {
         return id && !processedIds.has(id);
       });
 
+      if (!isExtracting) break;
+
       if (newAnchors.length === 0) {
-        // Scroll feed to load more
+        // Humanized dynamic scroll increment (400px–750px)
         const currentScroll = feed.scrollTop;
-        feed.scrollTop += 600;
-        await sleep(2000);
+        const scrollDelta = Math.floor(Math.random() * (750 - 400 + 1)) + 400;
+        feed.scrollTop += scrollDelta;
+        await jitter(1500, 2200);
+
+        if (!isExtracting) break;
 
         if (Math.abs(feed.scrollTop - currentScroll) < 10 || feed.scrollTop === lastScrollTop) {
           stuckCount++;
@@ -173,11 +237,9 @@ try {
         if (!placeId || processedIds.has(placeId)) continue;
         processedIds.add(placeId);
 
-        // ── Step 1: Get name from aria-label (most reliable, no click needed) ──
-        const cardName =
-          anchor.getAttribute("aria-label")?.split("·")[0].split("·")[0].trim() ||
-          anchor.textContent?.trim() ||
-          "";
+        // ── Step 1: Resilient Name Parsing (clean parser, no broken double-split) ──
+        const rawLabel = anchor.getAttribute("aria-label") || "";
+        const cardName = parseCardName(rawLabel) || parseCardName(anchor.textContent || "");
 
         // ── Step 2: Get card-level data without clicking ──
         const cardContainer =
@@ -185,14 +247,17 @@ try {
           anchor.parentElement?.parentElement ||
           anchor.parentElement;
 
-        const cardPhone = cardContainer ? extractPhoneFromCard(cardContainer as HTMLElement) : "";
-        const cardWebsite = cardContainer ? extractWebsiteFromCard(cardContainer as HTMLElement) : "";
+        const cardPhone = cardContainer ? extractPhoneFromElement(cardContainer as HTMLElement) : "";
+        const cardWebsite = cardContainer ? extractWebsiteFromElement(cardContainer as HTMLElement) : "";
 
-        // ── Step 3: Click card and wait for detail panel to update ──
+        // ── Step 3: Scroll card into view ──
         try {
           anchor.scrollIntoView({ behavior: "smooth", block: "center" });
-        } catch {}
-        await sleep(400);
+        } catch {
+          /* ignore scroll errors */
+        }
+        await jitter(300, 500);
+        if (!isExtracting) break;
 
         // Capture current h1 BEFORE clicking
         const prevH1 = getDetailPanelH1();
@@ -200,13 +265,18 @@ try {
         // Click the card
         anchor.click();
 
-        // Wait until h1 CHANGES (means detail panel updated with new place)
+        // Wait until h1 changes (confirms detail panel updated with new place)
         await waitForPanelUpdate(prevH1);
+        if (!isExtracting) break;
+
+        // Anti-bot delay after opening detail panel (1200ms–2500ms)
+        await jitter(1200, 2500);
+        if (!isExtracting) break;
 
         // ── Step 4: Extract detail panel data ──
         const detail = extractFromDetailPanel();
 
-        // ── Step 5: Build final lead (prefer card name, detail panel for contact) ──
+        // ── Step 5: Build final lead ──
         const lead = {
           source: "Google Maps",
           name: cardName || detail.name || "",
@@ -221,24 +291,25 @@ try {
           saveLead(lead);
         }
 
-        await sleep(300);
+        await jitter(200, 400);
       }
     }
 
-    console.log("[LeadScraper] Done. Total processed:", processedIds.size);
+    console.log("[LeadScraper] Extraction finished. Total processed places:", processedIds.size);
   }
 
-  // Extract place ID from Google Maps URL for reliable deduplication
+  // Extract place ID from Google Maps URL for reliable tracking
   function getPlaceId(href: string): string {
     try {
-      // Extract the place name segment from /maps/place/NAME/...
       const match = href.match(/\/maps\/place\/([^/]+)/);
       if (match) return decodeURIComponent(match[1]);
-    } catch {}
-    return href; // fallback to full href
+    } catch {
+      /* ignore URI decode errors */
+    }
+    return href;
   }
 
-  // Save lead to background with proper error handling
+  // Save lead to background queue with proper error handling
   function saveLead(lead: object) {
     chrome.runtime.sendMessage({ type: "SAVE_LEAD", payload: lead }, (res) => {
       if (chrome.runtime.lastError) {
@@ -249,23 +320,54 @@ try {
     });
   }
 
-  // ── Extract phone from card element ───────────────────────────────────────
-  function extractPhoneFromCard(card: HTMLElement): string {
-    const text = card.textContent || "";
+  // ── Extract phone from element (with clean phone:tel handling) ─────────────
+  function extractPhoneFromElement(container: HTMLElement): string {
+    const phoneEl =
+      container.querySelector('[data-item-id^="phone:tel:"]') ||
+      container.querySelector('button[data-item-id^="phone:tel:"]') ||
+      container.querySelector('button[data-tooltip*="phone" i]') ||
+      container.querySelector('button[aria-label*="phone" i], button[aria-label*="Phone" i]') ||
+      container.querySelector('button[aria-label*="ফোন" i]') ||
+      container.querySelector('[data-item-id*="phone"]');
+
+    if (phoneEl) {
+      const itemId = phoneEl.getAttribute("data-item-id") || "";
+      if (itemId.startsWith("phone:tel:")) {
+        return itemId.replace("phone:tel:", "").trim();
+      }
+      const label = phoneEl.getAttribute("aria-label") || phoneEl.textContent || "";
+      const m = label.match(/(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/);
+      if (m && m[0].replace(/\D/g, "").length >= 7) {
+        return m[0].trim();
+      }
+    }
+
+    const text = container.textContent || "";
     const matches = text.match(PHONE_REGEX);
-    if (!matches) return "";
-    const valid = matches.find(
-      (p) => p.replace(/\D/g, "").length >= 7 && p.replace(/\D/g, "").length <= 15
-    );
-    return valid?.trim() || "";
+    if (matches) {
+      const valid = matches.find(
+        (p) => p.replace(/\D/g, "").length >= 7 && p.replace(/\D/g, "").length <= 15
+      );
+      if (valid) return valid.trim();
+    }
+    return "";
   }
 
-  // ── Extract website from card element ─────────────────────────────────────
-  function extractWebsiteFromCard(card: HTMLElement): string {
-    const webLink = card.querySelector<HTMLAnchorElement>(
-      'a[aria-label*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
+  // ── Extract website from element (ignoring internal Google domains) ────────
+  function extractWebsiteFromElement(container: HTMLElement): string {
+    const webEl = container.querySelector<HTMLAnchorElement>(
+      'a[data-item-id="authority"], a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
     );
-    if (webLink?.href && !webLink.href.includes("google.com")) return webLink.href;
+    if (webEl?.href && !isInternalGoogleDomain(webEl.href)) {
+      return webEl.href;
+    }
+
+    const allAnchors = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[href^='http']"));
+    for (const a of allAnchors) {
+      if (a.href && !isInternalGoogleDomain(a.href)) {
+        return a.href;
+      }
+    }
     return "";
   }
 
@@ -273,7 +375,6 @@ try {
   function extractFromDetailPanel() {
     const lead = { source: "Google Maps", name: "", phone: "", email: "", website: "", address: "" };
 
-    // Find the detail panel container — check multiple possible selectors
     const detailPane =
       document.querySelector('div[role="main"] div.m6QEdf') ||
       document.querySelector('div.bJ2h1d') ||
@@ -284,55 +385,11 @@ try {
     const titleEl = detailPane.querySelector("h1.DUwDvf, h1.fontTitleLarge, h1");
     lead.name = titleEl?.textContent?.trim() || "";
 
-    // Phone — Google Maps stores phone in data-item-id="phone:tel:NUMBER"
-    const phoneEl =
-      detailPane.querySelector('[data-item-id^="phone:tel:"]') ||
-      detailPane.querySelector('button[data-tooltip*="phone" i]') ||
-      detailPane.querySelector('button[aria-label*="phone" i], button[aria-label*="Phone" i]') ||
-      detailPane.querySelector('button[aria-label*="ফোন" i]') ||
-      detailPane.querySelector('[data-item-id*="phone"]');
+    // Phone — clean extraction from data-item-id="phone:tel:"
+    lead.phone = extractPhoneFromElement(detailPane as HTMLElement);
 
-    if (phoneEl) {
-      const itemId = phoneEl.getAttribute("data-item-id") || "";
-      if (itemId.startsWith("phone:tel:")) {
-        lead.phone = itemId.replace("phone:tel:", "").trim();
-      } else {
-        const label = phoneEl.getAttribute("aria-label") || phoneEl.textContent || "";
-        const m = label.match(/[\d][\d\s\-().+]{6,}/);
-        if (m) lead.phone = m[0].trim();
-      }
-    }
-
-    // Fallback phone from text
-    if (!lead.phone) {
-      const paneText = detailPane.textContent || "";
-      const matches = paneText.match(PHONE_REGEX);
-      if (matches) {
-        const valid = matches.find(
-          (p) => p.replace(/\D/g, "").length >= 7 && p.replace(/\D/g, "").length <= 15
-        );
-        if (valid) lead.phone = valid.trim();
-      }
-    }
-
-    // Website
-    const webEl = detailPane.querySelector<HTMLAnchorElement>(
-      'a[data-item-id="authority"], a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i]'
-    );
-    if (webEl?.href && !webEl.href.includes("google.com")) {
-      lead.website = webEl.href;
-    } else {
-      const external = Array.from(
-        detailPane.querySelectorAll<HTMLAnchorElement>("a[href^='http']")
-      ).find(
-        (a) =>
-          a.href &&
-          !a.href.includes("google.com") &&
-          !a.href.includes("gstatic.com") &&
-          !a.href.includes("ggpht.com")
-      );
-      if (external) lead.website = external.href;
-    }
+    // Website — ignores internal Google domains
+    lead.website = extractWebsiteFromElement(detailPane as HTMLElement);
 
     // Address
     const addrEl = detailPane.querySelector(
@@ -346,7 +403,7 @@ try {
       lead.address = raw;
     }
 
-    // Email
+    // Email on Maps panel (if listed)
     const paneText = detailPane.textContent || "";
     const emailMatches = paneText.match(EMAIL_REGEX);
     if (emailMatches) {
