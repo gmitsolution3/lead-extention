@@ -9,11 +9,11 @@ export function Header({ platform, platformColor }: HeaderProps) {
   const isGoogleMaps = platform === 'Google Maps';
 
   return (
-    <div className="px-5 pt-4 pb-3.5 border-b border-zinc-800/60 bg-[#141416]/40">
+    <div className="px-5 pt-4 pb-3.5 border-b border-zinc-800/60 bg-canvas-subtle/40">
       <div className="flex items-center justify-between">
         {/* Left: Crisp branding with updated clean icon badge and logo */}
         <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-lg bg-[#c6f432]/10 border border-[#c6f432]/25 flex items-center justify-center text-[#c6f432] shadow-[0_0_12px_rgba(198,244,50,0.12)]">
+          <div className="h-7 w-7 rounded-lg bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-brand/10">
             <Target className="h-4 w-4" />
           </div>
           <h1 className="text-base font-bold tracking-tight text-zinc-100">Lead Scraper</h1>
@@ -21,10 +21,10 @@ export function Header({ platform, platformColor }: HeaderProps) {
 
         {/* Right: Modern rounded pill badge for platform status with glowing subtle dot */}
         {isGoogleMaps ? (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#c6f432]/10 text-[#c6f432] border border-[#c6f432]/25">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-brand/10 text-brand border border-brand/25">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c6f432] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#c6f432]"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand"></span>
             </span>
             {platform}
           </span>

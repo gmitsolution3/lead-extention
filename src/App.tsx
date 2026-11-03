@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { useExtraction } from '@/hooks/useExtraction';
 import { Header } from '@/components/Header';
 import { SearchControls } from '@/components/SearchControls';
 import { LeadsList } from '@/components/LeadsList';
 import { ExportFooter } from '@/components/ExportFooter';
+import { LeadDetailModal } from '@/components/LeadDetailModal';
+import type { Lead } from '@/types/lead';
 
 function App() {
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
   const {
     status,
     errorMsg,
@@ -28,7 +33,7 @@ function App() {
   } = useExtraction();
 
   return (
-    <div className="w-[420px] min-h-[580px] bg-[#121212] text-zinc-100 font-sans flex flex-col antialiased selection:bg-[#c6f432] selection:text-black">
+    <div className="w-[420px] min-h-[580px] bg-canvas text-zinc-100 font-sans flex flex-col antialiased selection:bg-brand selection:text-black rounded-2xl overflow-hidden border border-border shadow-2xl relative">
       <Header platform={platform} platformColor={platformColor} />
 
       <SearchControls
@@ -52,12 +57,19 @@ function App() {
         setFilterText={setFilterText}
         handleClear={handleClear}
         isExtracting={isExtracting}
+        onSelectLead={setSelectedLead}
       />
 
       <ExportFooter
         handleExportCSV={handleExportCSV}
         handleExportXML={handleExportXML}
         disabled={leads.length === 0 || isExtracting}
+      />
+
+      <LeadDetailModal
+        lead={selectedLead}
+        isOpen={!!selectedLead}
+        onClose={() => setSelectedLead(null)}
       />
     </div>
   );

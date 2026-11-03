@@ -1,23 +1,31 @@
-import { Phone, Mail, Globe, MapPin } from 'lucide-react';
+import { Phone, Mail, Globe, MapPin, ChevronRight } from 'lucide-react';
 import type { Lead } from '@/types/lead';
 
 interface LeadCardProps {
   lead: Lead;
+  onClick?: () => void;
 }
 
-export function LeadCard({ lead }: LeadCardProps) {
+export function LeadCard({ lead, onClick }: LeadCardProps) {
   const noWebsite = !lead.website;
 
   return (
     <div
-      className={`rounded-xl border p-3.5 text-sm flex flex-col gap-2 transition-all duration-150 ${
+      onClick={onClick}
+      className={`rounded-xl border p-3.5 text-sm flex flex-col gap-2 transition-all duration-150 cursor-pointer hover:border-brand/50 hover:bg-surface-hover hover:scale-[1.01] active:scale-[0.99] group ${
         noWebsite
-          ? 'bg-[#1c1c1e] hover:bg-[#202023] border-[#c6f432]/30 shadow-[0_0_16px_rgba(198,244,50,0.03)]'
-          : 'bg-[#1c1c1e] hover:bg-[#202023] border-zinc-800/60'
+          ? 'bg-surface border-brand/30'
+          : 'bg-surface border-zinc-800/60'
       }`}
     >
-      <div className="font-semibold text-zinc-100 text-sm leading-tight">
-        {lead.name}
+      <div className="flex items-center justify-between gap-2">
+        <div className="font-semibold text-zinc-100 text-sm leading-tight group-hover:text-white transition truncate">
+          {lead.name}
+        </div>
+        <div className="flex items-center gap-0.5 text-[10px] text-zinc-500 group-hover:text-brand font-medium shrink-0 transition">
+          <span>View details</span>
+          <ChevronRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5 pt-0.5">
@@ -42,8 +50,8 @@ export function LeadCard({ lead }: LeadCardProps) {
           </div>
         ) : (
           <div className="flex items-center gap-2 text-xs pt-0.5">
-            <Globe className="h-3.5 w-3.5 shrink-0 text-[#c6f432]/70" />
-            <span className="text-[#c6f432] bg-[#c6f432]/10 border border-[#c6f432]/20 px-2 py-0.5 rounded-md text-[11px] font-medium">
+            <Globe className="h-3.5 w-3.5 shrink-0 text-brand/70" />
+            <span className="text-brand bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-md text-[11px] font-medium">
               No website — potential client
             </span>
           </div>

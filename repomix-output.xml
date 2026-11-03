@@ -60,6 +60,7 @@ src/
     ExportFooter.tsx
     Header.tsx
     LeadCard.tsx
+    LeadDetailModal.tsx
     LeadsList.tsx
     SearchControls.tsx
   content/
@@ -95,6 +96,173 @@ vite.config.ts
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/components/LeadDetailModal.tsx">
+import { useState, useRef, useEffect } from 'react';
+import { Dialog } from '@base-ui/react';
+import { X, Phone, Mail, Globe, MapPin, Copy, Check, ExternalLink, Sparkles } from 'lucide-react';
+import type { Lead } from '@/types/lead';
+
+interface LeadDetailModalProps {
+  lead: Lead | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface CopyFieldRowProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string | undefined | null;
+  isUrl?: boolean;
+}
+
+function CopyFieldRow({ icon: Icon, label, value, isUrl }: CopyFieldRowProps) {
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  if (!value || value.trim() === '') {
+    return null;
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        setCopied(false);
+      }, 1800);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const handleOpenUrl = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    let targetUrl = value.trim();
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = `https://${targetUrl}`;
+    }
+    if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+      chrome.tabs.create({ url: targetUrl });
+    } else {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  return (
+    <div
+      onClick={handleCopy}
+      className="bg-surface-alt border border-border/60 rounded-xl p-3 flex items-center justify-between group cursor-pointer hover:border-brand/40 hover:bg-surface-hover transition duration-150 gap-3"
+      title="Click to copy"
+    >
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-border/60 flex items-center justify-center shrink-0 text-zinc-400 group-hover:text-brand group-hover:border-brand/40 transition">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+            {label}
+          </span>
+          <span className="text-xs text-zinc-200 font-medium truncate" title={value}>
+            {value}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        {isUrl && (
+          <button
+            type="button"
+            onClick={handleOpenUrl}
+            title="Open website in new tab"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-brand hover:bg-zinc-800 transition"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </button>
+        )}
+
+        {copied ? (
+          <div className="flex items-center gap-1 bg-brand/10 border border-brand/20 px-2 py-1 rounded-md text-brand">
+            <Check className="h-3 w-3 text-brand" />
+            <span className="text-[10px] font-medium text-brand">Copied!</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 px-1.5 py-1 text-[10px] text-zinc-500 group-hover:text-brand font-medium transition">
+            <Copy className="h-3 w-3" />
+            <span>Click to copy</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function LeadDetailModal({ lead, isOpen, onClose }: LeadDetailModalProps) {
+  if (!lead) return null;
+
+  return (
+    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs animate-in fade-in rounded-2xl" />
+        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface border border-border p-5 text-zinc-100 shadow-2xl animate-in fade-in zoom-in-95 outline-none flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              {lead.source && (
+                <div className="flex items-center">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800/90 text-zinc-300 border border-zinc-700/60 uppercase tracking-wide">
+                    {lead.source}
+                  </span>
+                </div>
+              )}
+              <Dialog.Title className="text-base font-semibold text-zinc-100 leading-snug break-words">
+                {lead.name}
+              </Dialog.Title>
+              <Dialog.Description className="sr-only">
+                Detailed inspection and contact actions for lead {lead.name}
+              </Dialog.Description>
+            </div>
+            <Dialog.Close
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition cursor-pointer shrink-0 focus:outline-none"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </Dialog.Close>
+          </div>
+
+          {/* Opportunity Banner if !lead.website */}
+          {!lead.website && (
+            <div className="bg-brand/10 border border-brand/25 text-brand rounded-xl p-3 text-xs flex items-center gap-2">
+              <Sparkles className="h-4 w-4 shrink-0 text-brand" />
+              <span>No website detected. High-conversion prospect for web development and outreach!</span>
+            </div>
+          )}
+
+          {/* Contact Fields */}
+          <div className="flex flex-col gap-2">
+            <CopyFieldRow icon={Phone} label="Phone" value={lead.phone} />
+            <CopyFieldRow icon={Mail} label="Email" value={lead.email} />
+            <CopyFieldRow icon={Globe} label="Website" value={lead.website} isUrl />
+            <CopyFieldRow icon={MapPin} label="Address" value={lead.address} />
+          </div>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+</file>
 
 <file path="public/favicon.svg">
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
@@ -575,355 +743,6 @@ export {
   CardAction,
   CardDescription,
   CardContent,
-}
-</file>
-
-<file path="src/components/ExportFooter.tsx">
-import { Download } from 'lucide-react';
-
-interface ExportFooterProps {
-  handleExportCSV: () => void;
-  handleExportXML: () => void;
-  disabled: boolean;
-}
-
-export function ExportFooter({ handleExportCSV, handleExportXML, disabled }: ExportFooterProps) {
-  return (
-    <div className="px-5 pb-5 pt-3.5 flex gap-2.5 border-t border-zinc-800/60 bg-[#141416]/40">
-      <button
-        onClick={handleExportCSV}
-        disabled={disabled}
-        className="flex-1 h-10 rounded-xl bg-[#1c1c1e] hover:bg-[#242428] border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#1c1c1e] disabled:hover:text-zinc-300 active:scale-[0.99] transition flex items-center justify-center gap-1.5 shadow-xs"
-      >
-        <Download className="h-3.5 w-3.5" />
-        Export CSV
-      </button>
-      <button
-        onClick={handleExportXML}
-        disabled={disabled}
-        className="flex-1 h-10 rounded-xl bg-[#1c1c1e] hover:bg-[#242428] border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#1c1c1e] disabled:hover:text-zinc-300 active:scale-[0.99] transition flex items-center justify-center gap-1.5 shadow-xs"
-      >
-        <Download className="h-3.5 w-3.5" />
-        Export XML
-      </button>
-    </div>
-  );
-}
-</file>
-
-<file path="src/components/Header.tsx">
-import { Target } from 'lucide-react';
-
-interface HeaderProps {
-  platform: string;
-  platformColor: string;
-}
-
-export function Header({ platform, platformColor }: HeaderProps) {
-  const isGoogleMaps = platform === 'Google Maps';
-
-  return (
-    <div className="px-5 pt-4 pb-3.5 border-b border-zinc-800/60 bg-[#141416]/40">
-      <div className="flex items-center justify-between">
-        {/* Left: Crisp branding with updated clean icon badge and logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-lg bg-[#c6f432]/10 border border-[#c6f432]/25 flex items-center justify-center text-[#c6f432] shadow-[0_0_12px_rgba(198,244,50,0.12)]">
-            <Target className="h-4 w-4" />
-          </div>
-          <h1 className="text-base font-bold tracking-tight text-zinc-100">Lead Scraper</h1>
-        </div>
-
-        {/* Right: Modern rounded pill badge for platform status with glowing subtle dot */}
-        {isGoogleMaps ? (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#c6f432]/10 text-[#c6f432] border border-[#c6f432]/25">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c6f432] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#c6f432]"></span>
-            </span>
-            {platform}
-          </span>
-        ) : (
-          <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
-            style={{
-              background: platformColor + '18',
-              color: platformColor,
-              border: `1px solid ${platformColor}40`,
-            }}
-          >
-            <span
-              className="inline-flex rounded-full h-1.5 w-1.5"
-              style={{ backgroundColor: platformColor }}
-            />
-            {platform}
-          </span>
-        )}
-      </div>
-
-      <p className="text-xs text-zinc-400 mt-2 font-normal leading-relaxed">
-        {isGoogleMaps
-          ? 'Scrapes all results from the active Google Maps search'
-          : 'Open Google Maps in this tab to start scraping'}
-      </p>
-    </div>
-  );
-}
-</file>
-
-<file path="src/components/LeadCard.tsx">
-import { Phone, Mail, Globe, MapPin } from 'lucide-react';
-import type { Lead } from '@/types/lead';
-
-interface LeadCardProps {
-  lead: Lead;
-}
-
-export function LeadCard({ lead }: LeadCardProps) {
-  const noWebsite = !lead.website;
-
-  return (
-    <div
-      className={`rounded-xl border p-3.5 text-sm flex flex-col gap-2 transition-all duration-150 ${
-        noWebsite
-          ? 'bg-[#1c1c1e] hover:bg-[#202023] border-[#c6f432]/30 shadow-[0_0_16px_rgba(198,244,50,0.03)]'
-          : 'bg-[#1c1c1e] hover:bg-[#202023] border-zinc-800/60'
-      }`}
-    >
-      <div className="font-semibold text-zinc-100 text-sm leading-tight">
-        {lead.name}
-      </div>
-
-      <div className="flex flex-col gap-1.5 pt-0.5">
-        {lead.phone && (
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <Phone className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
-            <span>{lead.phone}</span>
-          </div>
-        )}
-
-        {lead.email && (
-          <div className="flex items-center gap-2 text-xs text-amber-300/90 truncate bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
-            <Mail className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-            <span className="truncate font-medium">{lead.email}</span>
-          </div>
-        )}
-
-        {lead.website ? (
-          <div className="flex items-center gap-2 text-xs text-zinc-300 truncate">
-            <Globe className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
-            <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-xs pt-0.5">
-            <Globe className="h-3.5 w-3.5 shrink-0 text-[#c6f432]/70" />
-            <span className="text-[#c6f432] bg-[#c6f432]/10 border border-[#c6f432]/20 px-2 py-0.5 rounded-md text-[11px] font-medium">
-              No website — potential client
-            </span>
-          </div>
-        )}
-
-        {lead.address && (
-          <div className="flex items-center gap-2 text-xs text-zinc-400 truncate">
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
-            <span className="truncate">{lead.address}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/components/LeadsList.tsx">
-import { Trash2, Filter, X, Search } from 'lucide-react';
-import type { Lead } from '@/types/lead';
-import { LeadCard } from './LeadCard';
-
-interface LeadsListProps {
-  leads: Lead[];
-  filteredLeads: Lead[];
-  noWebsiteCount: number;
-  filterNoWebsiteOnly: boolean;
-  setFilterNoWebsiteOnly: (val: boolean | ((prev: boolean) => boolean)) => void;
-  filterText: string;
-  setFilterText: (text: string) => void;
-  handleClear: () => void;
-  isExtracting: boolean;
-}
-
-export function LeadsList({
-  leads,
-  filteredLeads,
-  noWebsiteCount,
-  filterNoWebsiteOnly,
-  setFilterNoWebsiteOnly,
-  filterText,
-  setFilterText,
-  handleClear,
-  isExtracting,
-}: LeadsListProps) {
-  return (
-    <div className="flex-1 flex flex-col px-5 pt-3 pb-3 overflow-hidden">
-      {/* Results Header Bar */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
-            Results ({filteredLeads.length}
-            {filteredLeads.length !== leads.length ? ` / ${leads.length}` : ''})
-          </span>
-          {noWebsiteCount > 0 && (
-            <button
-              onClick={() => setFilterNoWebsiteOnly(!filterNoWebsiteOnly)}
-              className={`text-[11px] px-2.5 py-0.5 rounded-lg transition-all duration-150 ${
-                filterNoWebsiteOnly
-                  ? 'bg-[#c6f432] text-black font-semibold shadow-sm'
-                  : 'bg-[#1a1a1c] border border-zinc-800 text-zinc-400 hover:text-zinc-200'
-              }`}
-              title="Filter leads without websites"
-            >
-              No Website ({noWebsiteCount})
-            </button>
-          )}
-        </div>
-        <button
-          onClick={handleClear}
-          disabled={leads.length === 0 || isExtracting}
-          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed transition duration-150"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          Clear
-        </button>
-      </div>
-
-      {/* Compact Matte Filter Input */}
-      {leads.length > 0 && (
-        <div className="relative mb-2.5">
-          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
-          <input
-            type="text"
-            placeholder="Filter leads by name, phone, or 'no website'..."
-            className="w-full h-8 rounded-lg bg-[#18181a] border border-zinc-800/80 pl-8 pr-7 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-[#c6f432]/60 focus:ring-1 focus:ring-[#c6f432]/40 transition duration-150"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-          />
-          {filterText && (
-            <button
-              onClick={() => setFilterText('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-100 transition"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Styled Leads Scroll Area */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 pr-0.5 min-h-0 max-h-[220px]">
-        {leads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-sm gap-2.5 py-8">
-            <div className="h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-              <Search className="h-5 w-5 text-zinc-600" />
-            </div>
-            <span className="text-xs text-zinc-500">No leads yet. Start an extraction above.</span>
-          </div>
-        ) : filteredLeads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-xs gap-1.5 py-8">
-            <span className="text-zinc-400 font-medium">No matches found</span>
-            <span className="text-[11px] text-zinc-600">Try adjusting your filter search query.</span>
-          </div>
-        ) : (
-          filteredLeads.map((lead, i) => <LeadCard key={i} lead={lead} />)
-        )}
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/components/SearchControls.tsx">
-import { Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import type { Status } from '@/types/lead';
-
-interface SearchControlsProps {
-  query: string;
-  setQuery: (query: string) => void;
-  isExtracting: boolean;
-  status: Status;
-  errorMsg: string;
-  leadsCount: number;
-  handleStart: () => void;
-  handleStop: () => void;
-}
-
-export function SearchControls({
-  query,
-  setQuery,
-  isExtracting,
-  status,
-  errorMsg,
-  leadsCount,
-  handleStart,
-  handleStop,
-}: SearchControlsProps) {
-  return (
-    <div className="px-5 pt-4 flex flex-col gap-3">
-      {/* Matte dark search field */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-        <input
-          type="text"
-          placeholder="e.g. English medium school Dhaka"
-          className="w-full h-11 rounded-xl bg-[#1a1a1c] border border-zinc-800 pl-10 pr-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-[#c6f432] focus:ring-1 focus:ring-[#c6f432]/50 disabled:opacity-40 transition-all duration-150"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !isExtracting && query.trim() && handleStart()}
-          disabled={isExtracting}
-        />
-      </div>
-
-      {/* Action buttons */}
-      {!isExtracting ? (
-        <button
-          onClick={handleStart}
-          disabled={!query.trim()}
-          className="w-full h-11 rounded-xl bg-[#c6f432] text-black font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#b8e82b] active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[#c6f432] transition-all duration-150 shadow-md shadow-[#c6f432]/10"
-        >
-          <Search className="h-4 w-4 stroke-[2.5]" />
-          Start Extraction
-        </button>
-      ) : (
-        <button
-          onClick={handleStop}
-          className="w-full h-11 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-rose-500/25 active:scale-[0.99] transition duration-150"
-        >
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Stop Extraction
-        </button>
-      )}
-
-      {/* Status banners */}
-      {status === 'done' && (
-        <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-[#1c1c1e] border border-emerald-500/30 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-          <span>Extraction complete — {leadsCount} lead{leadsCount !== 1 ? 's' : ''} found</span>
-        </div>
-      )}
-
-      {status === 'error' && (
-        <div className="flex items-center gap-2.5 text-xs text-rose-300 bg-rose-950/20 border border-rose-800/40 rounded-xl px-3.5 py-2.5 shadow-xs">
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-          <span className="truncate">{errorMsg || 'An error occurred during extraction.'}</span>
-        </div>
-      )}
-
-      {isExtracting && (
-        <div className="flex items-center gap-2.5 text-xs text-[#c6f432] bg-[#1c1c1e] border border-[#c6f432]/25 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
-          <Loader2 className="h-4 w-4 animate-spin shrink-0 text-[#c6f432]" />
-          <span>Navigating & Extracting… {leadsCount} lead{leadsCount !== 1 ? 's' : ''} collected</span>
-        </div>
-      )}
-    </div>
-  );
 }
 </file>
 
@@ -1855,6 +1674,371 @@ function Button({
 export { Button, buttonVariants }
 </file>
 
+<file path="src/components/ExportFooter.tsx">
+import { Download } from 'lucide-react';
+
+interface ExportFooterProps {
+  handleExportCSV: () => void;
+  handleExportXML: () => void;
+  disabled: boolean;
+}
+
+export function ExportFooter({ handleExportCSV, handleExportXML, disabled }: ExportFooterProps) {
+  return (
+    <div className="px-5 pb-5 pt-3.5 flex gap-2.5 border-t border-zinc-800/60 bg-canvas-subtle/40">
+      <button
+        onClick={handleExportCSV}
+        disabled={disabled}
+        className="flex-1 h-10 rounded-xl bg-surface hover:bg-surface-active border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-surface disabled:hover:text-zinc-300 active:scale-[0.99] transition flex items-center justify-center gap-1.5 shadow-xs"
+      >
+        <Download className="h-3.5 w-3.5" />
+        Export CSV
+      </button>
+      <button
+        onClick={handleExportXML}
+        disabled={disabled}
+        className="flex-1 h-10 rounded-xl bg-surface hover:bg-surface-active border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-surface disabled:hover:text-zinc-300 active:scale-[0.99] transition flex items-center justify-center gap-1.5 shadow-xs"
+      >
+        <Download className="h-3.5 w-3.5" />
+        Export XML
+      </button>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/Header.tsx">
+import { Target } from 'lucide-react';
+
+interface HeaderProps {
+  platform: string;
+  platformColor: string;
+}
+
+export function Header({ platform, platformColor }: HeaderProps) {
+  const isGoogleMaps = platform === 'Google Maps';
+
+  return (
+    <div className="px-5 pt-4 pb-3.5 border-b border-zinc-800/60 bg-canvas-subtle/40">
+      <div className="flex items-center justify-between">
+        {/* Left: Crisp branding with updated clean icon badge and logo */}
+        <div className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded-lg bg-brand/10 border border-brand/25 flex items-center justify-center text-brand shadow-brand/10">
+            <Target className="h-4 w-4" />
+          </div>
+          <h1 className="text-base font-bold tracking-tight text-zinc-100">Lead Scraper</h1>
+        </div>
+
+        {/* Right: Modern rounded pill badge for platform status with glowing subtle dot */}
+        {isGoogleMaps ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-brand/10 text-brand border border-brand/25">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand"></span>
+            </span>
+            {platform}
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+            style={{
+              background: platformColor + '18',
+              color: platformColor,
+              border: `1px solid ${platformColor}40`,
+            }}
+          >
+            <span
+              className="inline-flex rounded-full h-1.5 w-1.5"
+              style={{ backgroundColor: platformColor }}
+            />
+            {platform}
+          </span>
+        )}
+      </div>
+
+      <p className="text-xs text-zinc-400 mt-2 font-normal leading-relaxed">
+        {isGoogleMaps
+          ? 'Scrapes all results from the active Google Maps search'
+          : 'Open Google Maps in this tab to start scraping'}
+      </p>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/LeadCard.tsx">
+import { Phone, Mail, Globe, MapPin, ChevronRight } from 'lucide-react';
+import type { Lead } from '@/types/lead';
+
+interface LeadCardProps {
+  lead: Lead;
+  onClick?: () => void;
+}
+
+export function LeadCard({ lead, onClick }: LeadCardProps) {
+  const noWebsite = !lead.website;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`rounded-xl border p-3.5 text-sm flex flex-col gap-2 transition-all duration-150 cursor-pointer hover:border-brand/50 hover:bg-surface-hover hover:scale-[1.01] active:scale-[0.99] group ${
+        noWebsite
+          ? 'bg-surface border-brand/30'
+          : 'bg-surface border-zinc-800/60'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="font-semibold text-zinc-100 text-sm leading-tight group-hover:text-white transition truncate">
+          {lead.name}
+        </div>
+        <div className="flex items-center gap-0.5 text-[10px] text-zinc-500 group-hover:text-brand font-medium shrink-0 transition">
+          <span>View details</span>
+          <ChevronRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5 pt-0.5">
+        {lead.phone && (
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <Phone className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+            <span>{lead.phone}</span>
+          </div>
+        )}
+
+        {lead.email && (
+          <div className="flex items-center gap-2 text-xs text-amber-300/90 truncate bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+            <Mail className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+            <span className="truncate font-medium">{lead.email}</span>
+          </div>
+        )}
+
+        {lead.website ? (
+          <div className="flex items-center gap-2 text-xs text-zinc-300 truncate">
+            <Globe className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+            <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs pt-0.5">
+            <Globe className="h-3.5 w-3.5 shrink-0 text-brand/70" />
+            <span className="text-brand bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-md text-[11px] font-medium">
+              No website — potential client
+            </span>
+          </div>
+        )}
+
+        {lead.address && (
+          <div className="flex items-center gap-2 text-xs text-zinc-400 truncate">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+            <span className="truncate">{lead.address}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/LeadsList.tsx">
+import { Trash2, Filter, X, Search } from 'lucide-react';
+import type { Lead } from '@/types/lead';
+import { LeadCard } from './LeadCard';
+
+interface LeadsListProps {
+  leads: Lead[];
+  filteredLeads: Lead[];
+  noWebsiteCount: number;
+  filterNoWebsiteOnly: boolean;
+  setFilterNoWebsiteOnly: (val: boolean | ((prev: boolean) => boolean)) => void;
+  filterText: string;
+  setFilterText: (text: string) => void;
+  handleClear: () => void;
+  isExtracting: boolean;
+  onSelectLead?: (lead: Lead) => void;
+}
+
+export function LeadsList({
+  leads,
+  filteredLeads,
+  noWebsiteCount,
+  filterNoWebsiteOnly,
+  setFilterNoWebsiteOnly,
+  filterText,
+  setFilterText,
+  handleClear,
+  isExtracting,
+  onSelectLead,
+}: LeadsListProps) {
+  return (
+    <div className="flex-1 flex flex-col px-5 pt-3 pb-3 overflow-hidden">
+      {/* Results Header Bar */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+            Results ({filteredLeads.length}
+            {filteredLeads.length !== leads.length ? ` / ${leads.length}` : ''})
+          </span>
+          {noWebsiteCount > 0 && (
+            <button
+              onClick={() => setFilterNoWebsiteOnly(!filterNoWebsiteOnly)}
+              className={`text-[11px] px-2.5 py-0.5 rounded-lg transition-all duration-150 ${
+                filterNoWebsiteOnly
+                  ? 'bg-brand text-black font-semibold shadow-sm'
+                  : 'bg-surface-alt border border-zinc-800 text-zinc-400 hover:text-zinc-200'
+              }`}
+              title="Filter leads without websites"
+            >
+              No Website ({noWebsiteCount})
+            </button>
+          )}
+        </div>
+        <button
+          onClick={handleClear}
+          disabled={leads.length === 0 || isExtracting}
+          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed transition duration-150"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Clear
+        </button>
+      </div>
+
+      {/* Compact Matte Filter Input */}
+      {leads.length > 0 && (
+        <div className="relative mb-2.5">
+          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+          <input
+            type="text"
+            placeholder="Filter leads by name, phone, or 'no website'..."
+            className="w-full h-8 rounded-lg bg-input border border-zinc-800/80 pl-8 pr-7 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/40 transition duration-150"
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+          />
+          {filterText && (
+            <button
+              onClick={() => setFilterText('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-100 transition"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Styled Leads Scroll Area */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 pr-0.5 min-h-0 max-h-[220px]">
+        {leads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-sm gap-2.5 py-8">
+            <div className="h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <Search className="h-5 w-5 text-zinc-600" />
+            </div>
+            <span className="text-xs text-zinc-500">No leads yet. Start an extraction above.</span>
+          </div>
+        ) : filteredLeads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-xs gap-1.5 py-8">
+            <span className="text-zinc-400 font-medium">No matches found</span>
+            <span className="text-[11px] text-zinc-600">Try adjusting your filter search query.</span>
+          </div>
+        ) : (
+          filteredLeads.map((lead, i) => (
+            <LeadCard
+              key={i}
+              lead={lead}
+              onClick={() => onSelectLead?.(lead)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/SearchControls.tsx">
+import { Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import type { Status } from '@/types/lead';
+
+interface SearchControlsProps {
+  query: string;
+  setQuery: (query: string) => void;
+  isExtracting: boolean;
+  status: Status;
+  errorMsg: string;
+  leadsCount: number;
+  handleStart: () => void;
+  handleStop: () => void;
+}
+
+export function SearchControls({
+  query,
+  setQuery,
+  isExtracting,
+  status,
+  errorMsg,
+  leadsCount,
+  handleStart,
+  handleStop,
+}: SearchControlsProps) {
+  return (
+    <div className="px-5 pt-4 flex flex-col gap-3">
+      {/* Matte dark search field */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+        <input
+          type="text"
+          placeholder="e.g. English medium school Dhaka"
+          className="w-full h-11 rounded-xl bg-surface-alt border border-zinc-800 pl-10 pr-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/50 disabled:opacity-40 transition-all duration-150"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !isExtracting && query.trim() && handleStart()}
+          disabled={isExtracting}
+        />
+      </div>
+
+      {/* Action buttons */}
+      {!isExtracting ? (
+        <button
+          onClick={handleStart}
+          disabled={!query.trim()}
+          className="w-full h-11 rounded-xl bg-brand text-black font-bold text-sm flex items-center justify-center gap-2 hover:bg-brand-hover active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-brand transition-all duration-150 shadow-md shadow-brand/10"
+        >
+          <Search className="h-4 w-4 stroke-[2.5]" />
+          Start Extraction
+        </button>
+      ) : (
+        <button
+          onClick={handleStop}
+          className="w-full h-11 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-rose-500/25 active:scale-[0.99] transition duration-150"
+        >
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Stop Extraction
+        </button>
+      )}
+
+      {/* Status banners */}
+      {status === 'done' && (
+        <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-surface border border-emerald-500/30 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          <span>Extraction complete — {leadsCount} lead{leadsCount !== 1 ? 's' : ''} found</span>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="flex items-center gap-2.5 text-xs text-rose-300 bg-rose-950/20 border border-rose-800/40 rounded-xl px-3.5 py-2.5 shadow-xs">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+          <span className="truncate">{errorMsg || 'An error occurred during extraction.'}</span>
+        </div>
+      )}
+
+      {isExtracting && (
+        <div className="flex items-center gap-2.5 text-xs text-brand bg-surface border border-brand/25 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
+          <Loader2 className="h-4 w-4 animate-spin shrink-0 text-brand" />
+          <span>Navigating & Extracting… {leadsCount} lead{leadsCount !== 1 ? 's' : ''} collected</span>
+        </div>
+      )}
+    </div>
+  );
+}
+</file>
+
 <file path="src/content/domUtils.ts">
 import { isInternalGoogleDomain } from '@/lib/url';
 
@@ -2597,88 +2781,59 @@ export default defineConfig({
   --font-sans: 'Geist Variable', sans-serif;
   --font-heading: 'Geist Variable', sans-serif;
 
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Theme Canvas & Surfaces */
+  --color-canvas: #121212;
+  --color-canvas-subtle: #141416;
+  --color-surface: #1c1c1e;
+  --color-surface-hover: #222226;
+  --color-surface-active: #242428;
+  --color-surface-alt: #1a1a1c;
+  --color-input: #18181a;
 
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
+  /* Brand Accent Tokens */
+  --color-brand: #c6f432;
+  --color-brand-hover: #b8e82b;
 
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  /* Scrollbars */
+  --color-scrollbar-thumb: #27272a;
+  --color-scrollbar-hover: #3f3f46;
 
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+  /* Standard Tokens */
+  --color-background: var(--color-canvas);
+  --color-foreground: #f4f4f5;
+  --color-card: var(--color-surface);
+  --color-card-foreground: #f4f4f5;
+  --color-primary: var(--color-brand);
+  --color-primary-foreground: #000000;
+  --color-secondary: var(--color-surface-alt);
+  --color-border: rgba(255, 255, 255, 0.08);
 
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-lg: 0.75rem;
+  --radius-md: 0.625rem;
+  --radius-sm: 0.5rem;
 }
 
 :root {
-  --background: #121212;
+  --background: var(--color-canvas);
   --foreground: #f4f4f5;
-  --card: #1c1c1e;
+  --card: var(--color-surface);
   --card-foreground: #f4f4f5;
-  --popover: #1c1c1e;
+  --popover: var(--color-surface);
   --popover-foreground: #f4f4f5;
-  --primary: #c6f432;
+  --primary: var(--color-brand);
   --primary-foreground: #000000;
-  --secondary: #1a1a1c;
+  --secondary: var(--color-surface-alt);
   --secondary-foreground: #f4f4f5;
   --muted: #1e1e21;
   --muted-foreground: #a1a1aa;
-  --accent: #222226;
-  --accent-foreground: #c6f432;
+  --accent: var(--color-surface-hover);
+  --accent-foreground: var(--color-brand);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: #ffffff;
   --border: rgba(255, 255, 255, 0.08);
-  --input: #1a1a1c;
-  --ring: #c6f432;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --input: var(--color-input);
+  --ring: var(--color-brand);
   --radius: 0.75rem;
-  --sidebar: #18181b;
-  --sidebar-foreground: #f4f4f5;
-  --sidebar-primary: #c6f432;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #27272a;
-  --sidebar-accent-foreground: #f4f4f5;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #c6f432;
 }
 
 @layer base {
@@ -2686,19 +2841,19 @@ export default defineConfig({
     @apply border-border;
   }
   body {
-    background-color: #121212;
-    color: #f4f4f5;
+    background-color: transparent;
+    color: var(--color-foreground);
     font-family: var(--font-sans);
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   html {
-    @apply font-sans;
-    background-color: #121212;
+    @apply font-sans bg-transparent;
+    background-color: transparent;
   }
   ::selection {
-    background-color: #c6f432;
+    background-color: var(--color-brand);
     color: #000000;
   }
 }
@@ -2712,11 +2867,11 @@ export default defineConfig({
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--color-scrollbar-thumb);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--color-scrollbar-hover);
 }
 </file>
 
@@ -2820,13 +2975,18 @@ try {
 </file>
 
 <file path="src/App.tsx">
+import { useState } from 'react';
 import { useExtraction } from '@/hooks/useExtraction';
 import { Header } from '@/components/Header';
 import { SearchControls } from '@/components/SearchControls';
 import { LeadsList } from '@/components/LeadsList';
 import { ExportFooter } from '@/components/ExportFooter';
+import { LeadDetailModal } from '@/components/LeadDetailModal';
+import type { Lead } from '@/types/lead';
 
 function App() {
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
   const {
     status,
     errorMsg,
@@ -2850,7 +3010,7 @@ function App() {
   } = useExtraction();
 
   return (
-    <div className="w-[420px] min-h-[580px] bg-[#121212] text-zinc-100 font-sans flex flex-col antialiased selection:bg-[#c6f432] selection:text-black">
+    <div className="w-[420px] min-h-[580px] bg-canvas text-zinc-100 font-sans flex flex-col antialiased selection:bg-brand selection:text-black rounded-2xl overflow-hidden border border-border shadow-2xl relative">
       <Header platform={platform} platformColor={platformColor} />
 
       <SearchControls
@@ -2874,12 +3034,19 @@ function App() {
         setFilterText={setFilterText}
         handleClear={handleClear}
         isExtracting={isExtracting}
+        onSelectLead={setSelectedLead}
       />
 
       <ExportFooter
         handleExportCSV={handleExportCSV}
         handleExportXML={handleExportXML}
         disabled={leads.length === 0 || isExtracting}
+      />
+
+      <LeadDetailModal
+        lead={selectedLead}
+        isOpen={!!selectedLead}
+        onClose={() => setSelectedLead(null)}
       />
     </div>
   );

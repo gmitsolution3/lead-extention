@@ -30,7 +30,7 @@ export function SearchControls({
         <input
           type="text"
           placeholder="e.g. English medium school Dhaka"
-          className="w-full h-11 rounded-xl bg-[#1a1a1c] border border-zinc-800 pl-10 pr-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-[#c6f432] focus:ring-1 focus:ring-[#c6f432]/50 disabled:opacity-40 transition-all duration-150"
+          className="w-full h-11 rounded-xl bg-surface-alt border border-zinc-800 pl-10 pr-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/50 disabled:opacity-40 transition-all duration-150"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !isExtracting && query.trim() && handleStart()}
@@ -43,7 +43,7 @@ export function SearchControls({
         <button
           onClick={handleStart}
           disabled={!query.trim()}
-          className="w-full h-11 rounded-xl bg-[#c6f432] text-black font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#b8e82b] active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[#c6f432] transition-all duration-150 shadow-md shadow-[#c6f432]/10"
+          className="w-full h-11 rounded-xl bg-brand text-black font-bold text-sm flex items-center justify-center gap-2 hover:bg-brand-hover active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-brand transition-all duration-150 shadow-md shadow-brand/10"
         >
           <Search className="h-4 w-4 stroke-[2.5]" />
           Start Extraction
@@ -60,7 +60,7 @@ export function SearchControls({
 
       {/* Status banners */}
       {status === 'done' && (
-        <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-[#1c1c1e] border border-emerald-500/30 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
+        <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-surface border border-emerald-500/30 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
           <span>Extraction complete — {leadsCount} lead{leadsCount !== 1 ? 's' : ''} found</span>
         </div>
@@ -74,8 +74,8 @@ export function SearchControls({
       )}
 
       {isExtracting && (
-        <div className="flex items-center gap-2.5 text-xs text-[#c6f432] bg-[#1c1c1e] border border-[#c6f432]/25 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
-          <Loader2 className="h-4 w-4 animate-spin shrink-0 text-[#c6f432]" />
+        <div className="flex items-center gap-2.5 text-xs text-brand bg-surface border border-brand/25 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
+          <Loader2 className="h-4 w-4 animate-spin shrink-0 text-brand" />
           <span>Navigating & Extracting… {leadsCount} lead{leadsCount !== 1 ? 's' : ''} collected</span>
         </div>
       )}

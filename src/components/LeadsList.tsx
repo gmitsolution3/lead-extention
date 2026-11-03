@@ -12,6 +12,7 @@ interface LeadsListProps {
   setFilterText: (text: string) => void;
   handleClear: () => void;
   isExtracting: boolean;
+  onSelectLead?: (lead: Lead) => void;
 }
 
 export function LeadsList({
@@ -24,6 +25,7 @@ export function LeadsList({
   setFilterText,
   handleClear,
   isExtracting,
+  onSelectLead,
 }: LeadsListProps) {
   return (
     <div className="flex-1 flex flex-col px-5 pt-3 pb-3 overflow-hidden">
@@ -39,8 +41,8 @@ export function LeadsList({
               onClick={() => setFilterNoWebsiteOnly(!filterNoWebsiteOnly)}
               className={`text-[11px] px-2.5 py-0.5 rounded-lg transition-all duration-150 ${
                 filterNoWebsiteOnly
-                  ? 'bg-[#c6f432] text-black font-semibold shadow-sm'
-                  : 'bg-[#1a1a1c] border border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-brand text-black font-semibold shadow-sm'
+                  : 'bg-surface-alt border border-zinc-800 text-zinc-400 hover:text-zinc-200'
               }`}
               title="Filter leads without websites"
             >
@@ -65,7 +67,7 @@ export function LeadsList({
           <input
             type="text"
             placeholder="Filter leads by name, phone, or 'no website'..."
-            className="w-full h-8 rounded-lg bg-[#18181a] border border-zinc-800/80 pl-8 pr-7 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-[#c6f432]/60 focus:ring-1 focus:ring-[#c6f432]/40 transition duration-150"
+            className="w-full h-8 rounded-lg bg-input border border-zinc-800/80 pl-8 pr-7 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/40 transition duration-150"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
           />
@@ -95,7 +97,13 @@ export function LeadsList({
             <span className="text-[11px] text-zinc-600">Try adjusting your filter search query.</span>
           </div>
         ) : (
-          filteredLeads.map((lead, i) => <LeadCard key={i} lead={lead} />)
+          filteredLeads.map((lead, i) => (
+            <LeadCard
+              key={i}
+              lead={lead}
+              onClick={() => onSelectLead?.(lead)}
+            />
+          ))
         )}
       </div>
     </div>
