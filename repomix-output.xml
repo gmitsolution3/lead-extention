@@ -50,14 +50,32 @@ src/
     vite.svg
   background/
     background.ts
+    enrichment.ts
+    navigation.ts
+    storage.ts
   components/
     ui/
       button.tsx
       card.tsx
+    ExportFooter.tsx
+    Header.tsx
+    LeadCard.tsx
+    LeadsList.tsx
+    SearchControls.tsx
   content/
+    domUtils.ts
+    genericScraper.ts
     index.ts
+    mapsScraper.ts
+  hooks/
+    useExtraction.ts
   lib/
+    exporters.ts
+    messaging.ts
+    url.ts
     utils.ts
+  types/
+    lead.ts
   App.tsx
   index.css
   main.tsx
@@ -117,117 +135,16 @@ This section contains the contents of the repository's files.
 <svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
 </file>
 
-<file path="src/background/background.ts">
-export interface Lead {
-  source: string;
-  name: string;
-  phone: string;
-  email: string;
-  website: string;
-  address?: string;
-}
+<file path="src/background/enrichment.ts">
+import type { Lead } from '@/types/lead';
+import { normalizeUrl } from '@/lib/url';
+import { getLeads, saveLeads, extractPhoneDigits, enqueueTask } from './storage';
 
-export interface ExtractionStatus {
-  isExtracting: boolean;
-  activeQuery: string;
-  activeTabId: number | null;
-}
-
-// ── Storage helpers & Concurrency Queue ───────────────────────────────────────
-let saveQueue: Promise<any> = Promise.resolve();
-
-const getLeads = (): Promise<Lead[]> =>
-  new Promise((r) =>
-    chrome.storage.local.get(['leads'], (d) => r(((d.leads as Lead[]) || [])))
-  );
-
-const saveLeads = (leads: Lead[]): Promise<void> =>
-  new Promise((r) => chrome.storage.local.set({ leads }, r));
-
-const DEFAULT_EXTRACTION_STATUS: ExtractionStatus = {
-  isExtracting: false,
-  activeQuery: '',
-  activeTabId: null,
-};
-
-const getExtractionStatus = (): Promise<ExtractionStatus> =>
-  new Promise((r) =>
-    chrome.storage.local.get(['extractionStatus'], (d) =>
-      r((d.extractionStatus as ExtractionStatus) || DEFAULT_EXTRACTION_STATUS)
-    )
-  );
-
-const setExtractionStatus = async (
-  partial: Partial<ExtractionStatus>
-): Promise<ExtractionStatus> => {
-  const current = await getExtractionStatus();
-  const next: ExtractionStatus = { ...current, ...partial };
-  await new Promise<void>((r) =>
-    chrome.storage.local.set({ extractionStatus: next }, () => r())
-  );
-  return next;
-};
-
-// ── Deduplication Helpers ───────────────────────────────────────────────────
-function extractPhoneDigits(phone: string): string {
-  return (phone || '').replace(/\D/g, '');
-}
-
-function normalizeUrl(url: string): string {
-  if (!url) return '';
-  return url
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/+$/, '');
-}
-
-function isDuplicateLead(candidate: Lead, existingLeads: Lead[]): boolean {
-  const normName = (candidate.name || '').trim().toLowerCase();
-  const candDigits = extractPhoneDigits(candidate.phone || '');
-  const normWeb = (candidate.website || '').trim().toLowerCase();
-  const normAddr = (candidate.address || '').trim().toLowerCase();
-
-  return existingLeads.some((l) => {
-    // a) Phone match: digits length >= 7 and identical
-    const exDigits = extractPhoneDigits(l.phone || '');
-    if (candDigits.length >= 7 && exDigits.length >= 7 && candDigits === exDigits) {
-      return true;
-    }
-
-    const exNormName = (l.name || '').trim().toLowerCase();
-    const sameName = normName === exNormName && normName.length > 0;
-
-    if (sameName) {
-      // b) Name + Website match: exact normalized name AND normalized website matches (length > 10)
-      const exNormWeb = (l.website || '').trim().toLowerCase();
-      if (normWeb.length > 10 && exNormWeb.length > 10 && normWeb === exNormWeb) {
-        return true;
-      }
-      const cleanCandWeb = normalizeUrl(candidate.website || '');
-      const cleanExWeb = normalizeUrl(l.website || '');
-      if (cleanCandWeb.length > 6 && cleanCandWeb === cleanExWeb) {
-        return true;
-      }
-
-      // c) Name + Address match: exact normalized name AND normalized street address matches (length > 15)
-      const exNormAddr = (l.address || '').trim().toLowerCase();
-      if (normAddr.length > 15 && exNormAddr.length > 15 && normAddr === exNormAddr) {
-        return true;
-      }
-    }
-
-    return false;
-  });
-}
-
-// ── Lead Enrichment (Website Email Scraper) ──────────────────────────────────
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi;
 const IGNORED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif', '.js', '.css', '.woff', '.woff2'];
 const JUNK_PREFIXES = ['sentry', 'noreply', 'no-reply', 'example', 'domain'];
 
-function extractEmailsFromHtml(html: string): string[] {
+export function extractEmailsFromHtml(html: string): string[] {
   const mailtoMatches = Array.from(html.matchAll(/href=["']mailto:([^"'?>]+)/gi)).map((m) => m[1].trim());
   const bodyMatches = html.match(EMAIL_REGEX) || [];
   const allMatches: string[] = [...bodyMatches, ...mailtoMatches];
@@ -245,7 +162,7 @@ function extractEmailsFromHtml(html: string): string[] {
   return Array.from(new Set(cleanEmails));
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<string | null> {
+export async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<string | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -263,7 +180,7 @@ async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<string |
   }
 }
 
-function enqueueUpdateLeadEmail(targetLead: Lead, discoveredEmail: string): Promise<void> {
+export function enqueueUpdateLeadEmail(targetLead: Lead, discoveredEmail: string): Promise<void> {
   const task = async () => {
     const leads = await getLeads();
     const targetDigits = extractPhoneDigits(targetLead.phone || '');
@@ -294,12 +211,10 @@ function enqueueUpdateLeadEmail(targetLead: Lead, discoveredEmail: string): Prom
     }
   };
 
-  const nextPromise = saveQueue.then(task, task);
-  saveQueue = nextPromise.catch(() => {});
-  return nextPromise;
+  return enqueueTask(task);
 }
 
-async function enrichLeadEmail(lead: Lead): Promise<void> {
+export async function enrichLeadEmail(lead: Lead): Promise<void> {
   try {
     let rawUrl = (lead.website || '').trim();
     if (!rawUrl) return;
@@ -356,38 +271,12 @@ async function enrichLeadEmail(lead: Lead): Promise<void> {
     // Non-blocking enrichment failure
   }
 }
+</file>
 
-// ── Enqueue SAVE_LEAD (Storage Concurrency Fix) ──────────────────────────────
-function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count: number }> {
-  const task = async () => {
-    if (!newLead || !newLead.name) {
-      const current = await getLeads();
-      return { status: 'ignored', count: current.length };
-    }
+<file path="src/background/navigation.ts">
+import { setExtractionStatus } from './storage';
 
-    const leads = await getLeads();
-    if (isDuplicateLead(newLead, leads)) {
-      return { status: 'duplicate', count: leads.length };
-    }
-
-    leads.push(newLead);
-    await saveLeads(leads);
-
-    // Asynchronously enrich email if website is present and email is missing
-    if (newLead.website && !newLead.email) {
-      enrichLeadEmail(newLead).catch(() => {});
-    }
-
-    return { status: 'ok', count: leads.length };
-  };
-
-  const nextPromise = saveQueue.then(task, task);
-  saveQueue = nextPromise.catch(() => ({ status: 'error', count: 0 }));
-  return nextPromise;
-}
-
-// ── Resilient message delivery to content script ─────────────────────────────
-function sendStartScrapingWithRetry(tabId: number, retries = 30) {
+export function sendStartScrapingWithRetry(tabId: number, retries = 30) {
   let attempts = 0;
   const interval = setInterval(() => {
     attempts++;
@@ -423,8 +312,7 @@ function sendStartScrapingWithRetry(tabId: number, retries = 30) {
   }, 500);
 }
 
-// ── Helper to handle tab update with pre-registered listener ─────────────────
-function navigateTabAndScrape(tabId: number, targetUrl: string) {
+export function navigateTabAndScrape(tabId: number, targetUrl: string) {
   let navigationHandled = false;
 
   const onUpdated = (id: number, info: { status?: string }) => {
@@ -466,236 +354,122 @@ function navigateTabAndScrape(tabId: number, targetUrl: string) {
     }
   });
 }
-
-// ── Tab Lifecycle Cleanups ───────────────────────────────────────────────────
-chrome.tabs.onRemoved.addListener(async (tabId) => {
-  const status = await getExtractionStatus();
-  if (status.isExtracting && status.activeTabId === tabId) {
-    await setExtractionStatus({ isExtracting: false, activeTabId: null });
-  }
-});
-
-// ── Message Hub ──────────────────────────────────────────────────────────────
-chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
-
-  // ── GET_EXTRACTION_STATUS ──────────────────────────────────────────────────
-  if (req.type === 'GET_EXTRACTION_STATUS') {
-    getExtractionStatus().then((status) => sendResponse(status));
-    return true;
-  }
-
-  // ── START_SEARCH: navigate tab if needed then trigger scraper ──────────────
-  if (req.type === 'START_SEARCH') {
-    const { query, tabId } = req;
-    const targetUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}/`;
-
-    const handleNavigation = async (validTabId: number) => {
-      await setExtractionStatus({
-        isExtracting: true,
-        activeQuery: query || '',
-        activeTabId: validTabId,
-      });
-
-      chrome.tabs.get(validTabId, (tab) => {
-        if (chrome.runtime.lastError || !tab) {
-          console.error('[BG] tab get error:', chrome.runtime.lastError?.message);
-          setExtractionStatus({ isExtracting: false });
-          return;
-        }
-
-        if (tab.url && tab.url.includes('google.com/maps/search/')) {
-          if (tab.url !== targetUrl) {
-            navigateTabAndScrape(validTabId, targetUrl);
-          } else {
-            sendStartScrapingWithRetry(validTabId);
-          }
-        } else {
-          navigateTabAndScrape(validTabId, targetUrl);
-        }
-      });
-    };
-
-    if (tabId) {
-      handleNavigation(tabId);
-    } else {
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-        if (tabs[0]?.id) handleNavigation(tabs[0].id);
-      });
-    }
-
-    sendResponse({ status: 'navigating' });
-    return false;
-  }
-
-  // ── STOP: forward stop to content script ─────────────────────────────────
-  if (req.type === 'STOP_SEARCH') {
-    setExtractionStatus({ isExtracting: false });
-    if (req.tabId) {
-      chrome.tabs.sendMessage(req.tabId, { action: 'STOP_EXTRACTION' }, () => {
-        if (chrome.runtime.lastError) {
-          /* ignore */
-        }
-      });
-    }
-    sendResponse({ status: 'stopping' });
-    return false;
-  }
-
-  // ── SAVE_LEAD (Serialized Queue & Deduplication) ──────────────────────────
-  if (req.type === 'SAVE_LEAD') {
-    enqueueSaveLead(req.payload as Lead).then((res) => {
-      sendResponse(res);
-    });
-    return true;
-  }
-
-  // ── GET_LEADS ─────────────────────────────────────────────────────────────
-  if (req.type === 'GET_LEADS') {
-    getLeads().then((leads) => sendResponse({ leads }));
-    return true;
-  }
-
-  // ── CLEAR_LEADS ───────────────────────────────────────────────────────────
-  if (req.type === 'CLEAR_LEADS') {
-    saveQueue = saveQueue
-      .then(() => new Promise<void>((r) => chrome.storage.local.remove('leads', r)))
-      .then(() => {
-        sendResponse({ status: 'ok' });
-      });
-    return true;
-  }
-
-  // ── Forward DONE / ERROR to popup and update state ───────────────────────
-  if (req.type === 'EXTRACTION_DONE' || req.type === 'EXTRACTION_ERROR') {
-    setExtractionStatus({ isExtracting: false });
-    chrome.runtime.sendMessage(req, () => {
-      if (chrome.runtime.lastError) {
-        /* ignore popup closed cleanly */
-      }
-    });
-    return false;
-  }
-
-  // ── EXPORT CSV (RFC 4180 + UTF-8 BOM) ─────────────────────────────────────
-  if (req.type === 'EXPORT_CSV') {
-    (async () => {
-      const leads = await getLeads();
-      if (!leads.length) {
-        sendResponse({ status: 'error' });
-        return;
-      }
-      const rows = leads.map((l) =>
-        [l.source, l.name, l.phone, l.email, l.website, l.address ?? '']
-          .map((v) => `"${(v || '').replace(/"/g, '""')}"`)
-          .join(',')
-      );
-      // \uFEFF is UTF-8 Byte Order Mark for proper rendering in Excel
-      const csv = '\uFEFF' + ['Source,Name,Phone,Email,Website,Address', ...rows].join('\r\n');
-      chrome.downloads.download(
-        {
-          url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
-          filename: `leads_${Date.now()}.csv`,
-          saveAs: true,
-        },
-        () => sendResponse({ status: 'ok' })
-      );
-    })();
-    return true;
-  }
-
-  // ── EXPORT XML ────────────────────────────────────────────────────────────
-  if (req.type === 'EXPORT_XML') {
-    (async () => {
-      const leads = await getLeads();
-      if (!leads.length) {
-        sendResponse({ status: 'error' });
-        return;
-      }
-      const x = (s: string) =>
-        (s || '').replace(/[<>&'"]/g, (c) =>
-          ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c] ?? c)
-        );
-      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<leads>\n';
-      for (const l of leads) {
-        xml += `  <lead>\n    <source>${x(l.source)}</source>\n    <name>${x(l.name)}</name>\n`;
-        xml += `    <phone>${x(l.phone)}</phone>\n    <email>${x(l.email)}</email>\n`;
-        xml += `    <website>${x(l.website)}</website>\n    <address>${x(l.address ?? '')}</address>\n  </lead>\n`;
-      }
-      xml += '</leads>';
-      chrome.downloads.download(
-        {
-          url: 'data:application/xml;charset=utf-8,' + encodeURIComponent(xml),
-          filename: `leads_${Date.now()}.xml`,
-          saveAs: true,
-        },
-        () => sendResponse({ status: 'ok' })
-      );
-    })();
-    return true;
-  }
-});
 </file>
 
-<file path="src/components/ui/button.tsx">
-import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { cva, type VariantProps } from "class-variance-authority"
+<file path="src/background/storage.ts">
+import type { Lead, ExtractionStatus } from '@/types/lead';
+import { DEFAULT_EXTRACTION_STATUS } from '@/types/lead';
+import { normalizeUrl } from '@/lib/url';
+import { enrichLeadEmail } from './enrichment';
 
-import { cn } from "@/lib/utils"
+export let saveQueue: Promise<any> = Promise.resolve();
 
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
-        destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-)
-
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return (
-    <ButtonPrimitive
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  )
+export function enqueueTask<T>(task: () => Promise<T>): Promise<T> {
+  const nextPromise = saveQueue.then(task, task);
+  saveQueue = nextPromise.catch(() => ({} as any));
+  return nextPromise;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-export { Button, buttonVariants }
+export const getLeads = (): Promise<Lead[]> =>
+  new Promise((r) =>
+    chrome.storage.local.get(['leads'], (d) => r(((d.leads as Lead[]) || [])))
+  );
+
+export const saveLeads = (leads: Lead[]): Promise<void> =>
+  new Promise((r) => chrome.storage.local.set({ leads }, r));
+
+export const clearLeads = (): Promise<void> => {
+  return enqueueTask(async () => {
+    await new Promise<void>((r) => chrome.storage.local.remove('leads', r));
+  });
+};
+
+export const getExtractionStatus = (): Promise<ExtractionStatus> =>
+  new Promise((r) =>
+    chrome.storage.local.get(['extractionStatus'], (d) =>
+      r((d.extractionStatus as ExtractionStatus) || DEFAULT_EXTRACTION_STATUS)
+    )
+  );
+
+export const setExtractionStatus = async (
+  partial: Partial<ExtractionStatus>
+): Promise<ExtractionStatus> => {
+  const current = await getExtractionStatus();
+  const next: ExtractionStatus = { ...current, ...partial };
+  await new Promise<void>((r) =>
+    chrome.storage.local.set({ extractionStatus: next }, () => r())
+  );
+  return next;
+};
+
+export function extractPhoneDigits(phone: string): string {
+  return (phone || '').replace(/\D/g, '');
+}
+
+export function isDuplicateLead(candidate: Lead, existingLeads: Lead[]): boolean {
+  const normName = (candidate.name || '').trim().toLowerCase();
+  const candDigits = extractPhoneDigits(candidate.phone || '');
+  const normWeb = (candidate.website || '').trim().toLowerCase();
+  const normAddr = (candidate.address || '').trim().toLowerCase();
+
+  return existingLeads.some((l) => {
+    // a) Phone match: digits length >= 7 and identical
+    const exDigits = extractPhoneDigits(l.phone || '');
+    if (candDigits.length >= 7 && exDigits.length >= 7 && candDigits === exDigits) {
+      return true;
+    }
+
+    const exNormName = (l.name || '').trim().toLowerCase();
+    const sameName = normName === exNormName && normName.length > 0;
+
+    if (sameName) {
+      // b) Name + Website match: exact normalized name AND normalized website matches (length > 10)
+      const exNormWeb = (l.website || '').trim().toLowerCase();
+      if (normWeb.length > 10 && exNormWeb.length > 10 && normWeb === exNormWeb) {
+        return true;
+      }
+      const cleanCandWeb = normalizeUrl(candidate.website || '');
+      const cleanExWeb = normalizeUrl(l.website || '');
+      if (cleanCandWeb.length > 6 && cleanCandWeb === cleanExWeb) {
+        return true;
+      }
+
+      // c) Name + Address match: exact normalized name AND normalized street address matches (length > 15)
+      const exNormAddr = (l.address || '').trim().toLowerCase();
+      if (normAddr.length > 15 && exNormAddr.length > 15 && normAddr === exNormAddr) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+}
+
+export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count: number }> {
+  const task = async () => {
+    if (!newLead || !newLead.name) {
+      const current = await getLeads();
+      return { status: 'ignored', count: current.length };
+    }
+
+    const leads = await getLeads();
+    if (isDuplicateLead(newLead, leads)) {
+      return { status: 'duplicate', count: leads.length };
+    }
+
+    leads.push(newLead);
+    await saveLeads(leads);
+
+    // Asynchronously enrich email if website is present and email is missing
+    if (newLead.website && !newLead.email) {
+      enrichLeadEmail(newLead).catch(() => {});
+    }
+
+    return { status: 'ok', count: leads.length };
+  };
+
+  return enqueueTask(task);
+}
 </file>
 
 <file path="src/components/ui/card.tsx">
@@ -804,6 +578,1040 @@ export {
 }
 </file>
 
+<file path="src/components/ExportFooter.tsx">
+import { Download } from 'lucide-react';
+
+interface ExportFooterProps {
+  handleExportCSV: () => void;
+  handleExportXML: () => void;
+  disabled: boolean;
+}
+
+export function ExportFooter({ handleExportCSV, handleExportXML, disabled }: ExportFooterProps) {
+  return (
+    <div className="px-5 pb-5 flex gap-2 border-t border-slate-700/60 pt-3">
+      <button
+        onClick={handleExportCSV}
+        disabled={disabled}
+        className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
+      >
+        <Download className="h-3.5 w-3.5" />
+        Export CSV
+      </button>
+      <button
+        onClick={handleExportXML}
+        disabled={disabled}
+        className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
+      >
+        <Download className="h-3.5 w-3.5" />
+        Export XML
+      </button>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/Header.tsx">
+interface HeaderProps {
+  platform: string;
+  platformColor: string;
+}
+
+export function Header({ platform, platformColor }: HeaderProps) {
+  return (
+    <div className="px-5 pt-5 pb-4 border-b border-slate-700/60">
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-lg font-bold tracking-tight text-white">Lead Scraper</h1>
+        <span
+          className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
+          style={{
+            background: platformColor + '22',
+            color: platformColor,
+            border: `1px solid ${platformColor}55`,
+          }}
+        >
+          {platform}
+        </span>
+      </div>
+      <p className="text-xs text-slate-400">
+        {platform === 'Google Maps'
+          ? 'Scrapes all results from the active Google Maps search'
+          : 'Open Google Maps in this tab to start scraping'}
+      </p>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/LeadCard.tsx">
+import { Phone, Mail, Globe, MapPin } from 'lucide-react';
+import type { Lead } from '@/types/lead';
+
+interface LeadCardProps {
+  lead: Lead;
+}
+
+export function LeadCard({ lead }: LeadCardProps) {
+  const noWebsite = !lead.website;
+
+  return (
+    <div
+      className={`rounded-lg border px-3 py-2.5 text-sm flex flex-col gap-1 transition ${
+        noWebsite
+          ? 'bg-emerald-900/20 border-emerald-600/40'
+          : 'bg-slate-800/60 border-slate-700/50'
+      }`}
+    >
+      <div className="font-semibold text-white leading-tight">{lead.name}</div>
+
+      {lead.phone && (
+        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+          <Phone className="h-3 w-3 shrink-0" />
+          {lead.phone}
+        </div>
+      )}
+
+      {lead.email && (
+        <div className="flex items-center gap-1.5 text-xs text-amber-300/90 truncate">
+          <Mail className="h-3 w-3 shrink-0 text-amber-400" />
+          <span className="truncate">{lead.email}</span>
+        </div>
+      )}
+
+      {lead.website ? (
+        <div className="flex items-center gap-1.5 text-xs text-blue-400 truncate">
+          <Globe className="h-3 w-3 shrink-0" />
+          <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+          <Globe className="h-3 w-3 shrink-0" />
+          No website — potential client!
+        </div>
+      )}
+
+      {lead.address && (
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate">
+          <MapPin className="h-3 w-3 shrink-0" />
+          <span className="truncate">{lead.address}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/LeadsList.tsx">
+import { Trash2, Filter, X, Search } from 'lucide-react';
+import type { Lead } from '@/types/lead';
+import { LeadCard } from './LeadCard';
+
+interface LeadsListProps {
+  leads: Lead[];
+  filteredLeads: Lead[];
+  noWebsiteCount: number;
+  filterNoWebsiteOnly: boolean;
+  setFilterNoWebsiteOnly: (val: boolean | ((prev: boolean) => boolean)) => void;
+  filterText: string;
+  setFilterText: (text: string) => void;
+  handleClear: () => void;
+  isExtracting: boolean;
+}
+
+export function LeadsList({
+  leads,
+  filteredLeads,
+  noWebsiteCount,
+  filterNoWebsiteOnly,
+  setFilterNoWebsiteOnly,
+  filterText,
+  setFilterText,
+  handleClear,
+  isExtracting,
+}: LeadsListProps) {
+  return (
+    <div className="flex-1 flex flex-col px-5 pt-3 pb-3 overflow-hidden">
+      {/* Results Bar */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+            Results ({filteredLeads.length}
+            {filteredLeads.length !== leads.length ? ` / ${leads.length}` : ''})
+          </span>
+          {noWebsiteCount > 0 && (
+            <button
+              onClick={() => setFilterNoWebsiteOnly(!filterNoWebsiteOnly)}
+              className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                filterNoWebsiteOnly
+                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'
+              }`}
+              title="Filter leads without websites"
+            >
+              No Website ({noWebsiteCount})
+            </button>
+          )}
+        </div>
+        <button
+          onClick={handleClear}
+          disabled={leads.length === 0 || isExtracting}
+          className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Clear
+        </button>
+      </div>
+
+      {/* Filter Input */}
+      {leads.length > 0 && (
+        <div className="relative mb-2">
+          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Filter leads by name, phone, or 'no website'..."
+            className="w-full h-8 rounded-md bg-slate-800/80 border border-slate-700/70 pl-8 pr-7 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+          />
+          {filterText && (
+            <button
+              onClick={() => setFilterText('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Leads Scroll Area */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-0.5 min-h-0 max-h-[220px]">
+        {leads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 text-sm gap-2 py-8">
+            <Search className="h-8 w-8 opacity-30" />
+            <span>No leads yet. Start an extraction above.</span>
+          </div>
+        ) : filteredLeads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs gap-1 py-8">
+            <span>No leads match current filter.</span>
+          </div>
+        ) : (
+          filteredLeads.map((lead, i) => <LeadCard key={i} lead={lead} />)
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/SearchControls.tsx">
+import { Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import type { Status } from '@/types/lead';
+
+interface SearchControlsProps {
+  query: string;
+  setQuery: (query: string) => void;
+  isExtracting: boolean;
+  status: Status;
+  errorMsg: string;
+  leadsCount: number;
+  handleStart: () => void;
+  handleStop: () => void;
+}
+
+export function SearchControls({
+  query,
+  setQuery,
+  isExtracting,
+  status,
+  errorMsg,
+  leadsCount,
+  handleStart,
+  handleStop,
+}: SearchControlsProps) {
+  return (
+    <div className="px-5 pt-4 flex flex-col gap-3">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+        <input
+          type="text"
+          placeholder="e.g. English medium school Dhaka"
+          className="w-full h-10 rounded-lg bg-slate-800 border border-slate-700 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 transition"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !isExtracting && handleStart()}
+          disabled={isExtracting}
+        />
+      </div>
+
+      {/* Action button */}
+      {!isExtracting ? (
+        <button
+          onClick={handleStart}
+          disabled={!query.trim()}
+          className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+        >
+          <Search className="h-4 w-4" />
+          Start Extraction
+        </button>
+      ) : (
+        <button
+          onClick={handleStop}
+          className="w-full h-10 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+        >
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Stop Extraction
+        </button>
+      )}
+
+      {/* Status banners */}
+      {status === 'done' && (
+        <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-400/10 border border-emerald-500/30 rounded-lg px-3 py-2">
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+          Extraction complete — {leadsCount} lead{leadsCount !== 1 ? 's' : ''} found
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 border border-red-500/30 rounded-lg px-3 py-2">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          {errorMsg}
+        </div>
+      )}
+      {isExtracting && (
+        <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-400/10 border border-blue-500/30 rounded-lg px-3 py-2">
+          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+          Navigating & Extracting… {leadsCount} lead{leadsCount !== 1 ? 's' : ''} collected
+        </div>
+      )}
+    </div>
+  );
+}
+</file>
+
+<file path="src/content/domUtils.ts">
+import { isInternalGoogleDomain } from '@/lib/url';
+
+export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+export const jitter = (min: number, max: number) =>
+  sleep(Math.floor(Math.random() * (max - min + 1) + min));
+
+export const PHONE_REGEX = /(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/g;
+export const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+export async function waitFor(
+  selector: string,
+  timeout = 12000,
+  checkActive: () => boolean = () => true
+): Promise<Element | null> {
+  const end = Date.now() + timeout;
+  while (Date.now() < end && checkActive()) {
+    const el = document.querySelector(selector);
+    if (el) return el;
+    await sleep(300);
+  }
+  return null;
+}
+
+// Wait for h1 to change to a DIFFERENT value than prevText (means panel updated)
+export async function waitForPanelUpdate(
+  prevH1Text: string,
+  timeout = 5000,
+  checkActive: () => boolean = () => true
+): Promise<void> {
+  const end = Date.now() + timeout;
+  while (Date.now() < end && checkActive()) {
+    const h1 = getDetailPanelH1();
+    if (h1 && h1 !== prevH1Text) return;
+    await sleep(150);
+  }
+}
+
+// Get the h1 from the detail panel only (not the search results title)
+export function getDetailPanelH1(): string {
+  const panel =
+    document.querySelector('div[role="main"] div.m6QEdf') ||
+    document.querySelector('div.bJ2h1d') ||
+    document.querySelector('div[data-section-id="ap"]') ||
+    document.querySelector('div[jsaction*="pane"]');
+
+  if (panel) {
+    const h1 = panel.querySelector('h1');
+    if (h1?.textContent?.trim()) return h1.textContent.trim();
+  }
+
+  const h1 = document.querySelector('h1.DUwDvf, h1.fontTitleLarge');
+  return h1?.textContent?.trim() || '';
+}
+
+// ── Clean Name Parser (replaces broken double split) ──────────────────────
+export function parseCardName(rawText: string): string {
+  if (!rawText) return '';
+  // Google Maps separates card title from rating/category with middle dot, bullet, or pipe
+  const firstChunk = rawText.split(/[·•|\n]/)[0].trim();
+
+  // Strip ratings, review counts, stars if present in the chunk
+  const cleaned = firstChunk
+    .replace(/★\s*[\d.]+/g, '')
+    .replace(/\b\d\.\d\s*(\([\d,]+\))?/g, '')
+    .replace(/\([\d,]+\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleaned || firstChunk;
+}
+
+// ── Extract phone from element (with clean phone:tel handling) ─────────────
+export function extractPhoneFromElement(container: HTMLElement): string {
+  const phoneEl =
+    container.querySelector('[data-item-id^="phone:tel:"]') ||
+    container.querySelector('button[data-item-id^="phone:tel:"]') ||
+    container.querySelector('button[data-tooltip*="phone" i]') ||
+    container.querySelector('button[aria-label*="phone" i], button[aria-label*="Phone" i]') ||
+    container.querySelector('button[aria-label*="ফোন" i]') ||
+    container.querySelector('[data-item-id*="phone"]');
+
+  if (phoneEl) {
+    const itemId = phoneEl.getAttribute('data-item-id') || '';
+    if (itemId.startsWith('phone:tel:')) {
+      return itemId.replace('phone:tel:', '').trim();
+    }
+    const label = phoneEl.getAttribute('aria-label') || phoneEl.textContent || '';
+    const m = label.match(/(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/);
+    if (m && m[0].replace(/\D/g, '').length >= 7) {
+      return m[0].trim();
+    }
+  }
+
+  const text = container.textContent || '';
+  const matches = text.match(PHONE_REGEX);
+  if (matches) {
+    const valid = matches.find(
+      (p) => p.replace(/\D/g, '').length >= 7 && p.replace(/\D/g, '').length <= 15
+    );
+    if (valid) return valid.trim();
+  }
+  return '';
+}
+
+// ── Extract website from element (ignoring internal Google domains) ────────
+export function extractWebsiteFromElement(container: HTMLElement): string {
+  const webEl = container.querySelector<HTMLAnchorElement>(
+    'a[data-item-id="authority"], a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
+  );
+  if (webEl?.href && !isInternalGoogleDomain(webEl.href)) {
+    return webEl.href;
+  }
+
+  const allAnchors = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[href^='http']"));
+  for (const a of allAnchors) {
+    if (a.href && !isInternalGoogleDomain(a.href)) {
+      return a.href;
+    }
+  }
+  return '';
+}
+
+// Save lead to background queue with proper error handling
+export function saveLead(lead: object) {
+  chrome.runtime.sendMessage({ type: 'SAVE_LEAD', payload: lead }, (res) => {
+    if (chrome.runtime.lastError) {
+      console.warn('[LeadScraper] SAVE_LEAD error:', chrome.runtime.lastError.message);
+    } else {
+      console.log('[LeadScraper] Saved. Total:', res?.count);
+    }
+  });
+}
+</file>
+
+<file path="src/content/genericScraper.ts">
+import type { Lead } from '@/types/lead';
+import { EMAIL_REGEX, PHONE_REGEX, saveLead } from './domUtils';
+
+export async function scrapeGenericPage(): Promise<void> {
+  console.log('[LeadScraper] Generic scraper on:', window.location.href);
+  const pageText = document.body?.textContent || document.documentElement?.textContent || '';
+  const title = document.title || document.querySelector('h1')?.textContent || '';
+  const emails = Array.from(new Set(pageText.match(EMAIL_REGEX) || [])).filter(
+    (e) => !e.endsWith('.png') && !e.endsWith('.jpg') && !e.endsWith('.svg')
+  );
+  const phones = Array.from(new Set(pageText.match(PHONE_REGEX) || [])).filter(
+    (p) => p.replace(/\D/g, '').length >= 7 && p.replace(/\D/g, '').length <= 15
+  );
+  let source = 'Web Page';
+  if (window.location.hostname.includes('facebook.com')) source = 'Facebook';
+  if (window.location.hostname.includes('linkedin.com')) source = 'LinkedIn';
+  const lead: Lead = {
+    source,
+    name: title.trim().substring(0, 100),
+    phone: phones[0] || '',
+    email: emails[0] || '',
+    website: window.location.href,
+    address: '',
+  };
+  if (lead.name && (lead.phone || lead.email)) saveLead(lead);
+}
+</file>
+
+<file path="src/content/mapsScraper.ts">
+import type { Lead } from '@/types/lead';
+import {
+  waitFor,
+  waitForPanelUpdate,
+  getDetailPanelH1,
+  parseCardName,
+  extractPhoneFromElement,
+  extractWebsiteFromElement,
+  saveLead,
+  jitter,
+  EMAIL_REGEX,
+} from './domUtils';
+
+// Extract place ID from Google Maps URL for reliable tracking
+export function getPlaceId(href: string): string {
+  try {
+    const match = href.match(/\/maps\/place\/([^/]+)/);
+    if (match) return decodeURIComponent(match[1]);
+  } catch {
+    /* ignore URI decode errors */
+  }
+  return href;
+}
+
+// ── Extract full lead from detail panel ───────────────────────────────────
+export function extractFromDetailPanel(): Lead {
+  const lead: Lead = { source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
+
+  const detailPane =
+    document.querySelector('div[role="main"] div.m6QEdf') ||
+    document.querySelector('div.bJ2h1d') ||
+    document.querySelector('div[role="main"]') ||
+    document;
+
+  // Name
+  const titleEl = detailPane.querySelector('h1.DUwDvf, h1.fontTitleLarge, h1');
+  lead.name = titleEl?.textContent?.trim() || '';
+
+  // Phone — clean extraction from data-item-id="phone:tel:"
+  lead.phone = extractPhoneFromElement(detailPane as HTMLElement);
+
+  // Website — ignores internal Google domains
+  lead.website = extractWebsiteFromElement(detailPane as HTMLElement);
+
+  // Address
+  const addrEl = detailPane.querySelector(
+    'button[data-item-id="address"], button[aria-label*="address" i], button[aria-label*="ঠিকানা" i]'
+  );
+  if (addrEl) {
+    const raw =
+      addrEl.getAttribute('aria-label')?.replace(/^address:?\s*/i, '').replace(/^ঠিকানা:?\s*/i, '').trim() ||
+      addrEl.textContent?.trim() ||
+      '';
+    lead.address = raw;
+  }
+
+  // Email on Maps panel (if listed)
+  const paneText = detailPane.textContent || '';
+  const emailMatches = paneText.match(EMAIL_REGEX);
+  if (emailMatches) {
+    const validEmail = emailMatches.find(
+      (e) => !e.endsWith('.png') && !e.endsWith('.jpg') && !e.endsWith('.js') && !e.endsWith('.webp')
+    );
+    if (validEmail) lead.email = validEmail;
+  }
+
+  return lead;
+}
+
+// ── Google Maps Scraper ────────────────────────────────────────────────────
+export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void> {
+  console.log('[LeadScraper] Starting Google Maps extraction...');
+
+  // Wait for results feed
+  let feed: Element | null = await waitFor('div[role="feed"]', 12000, checkActive);
+  if (!feed) {
+    feed =
+      document.querySelector('div[aria-label*="Results" i]') ||
+      document.querySelector('div[aria-label*="ফলাফল" i]') ||
+      document.querySelector('div.m6QEdf[aria-label]') ||
+      document.querySelector('div.m6QEdf');
+  }
+
+  if (!feed) {
+    // Single place view fallback
+    const singleLead = extractFromDetailPanel();
+    if (singleLead?.name) {
+      saveLead(singleLead);
+      return;
+    }
+    chrome.runtime.sendMessage(
+      {
+        type: 'EXTRACTION_ERROR',
+        message: 'Google Maps search results not found. Please open a search page first.',
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          /* ignore */
+        }
+      }
+    );
+    return;
+  }
+
+  await jitter(1000, 1500);
+
+  // Track processed places by their unique place-ID in href
+  const processedIds = new Set<string>();
+  let stuckCount = 0;
+  let lastScrollTop = -1;
+
+  while (checkActive()) {
+    // Collect unprocessed result cards
+    const allAnchors = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('a[href*="/maps/place/"]')
+    );
+
+    // Deduplicate by extracting the place CID/ID from the URL
+    const newAnchors = allAnchors.filter((a) => {
+      const id = getPlaceId(a.href);
+      return id && !processedIds.has(id);
+    });
+
+    if (!checkActive()) break;
+
+    if (newAnchors.length === 0) {
+      // Humanized dynamic scroll increment (400px–750px)
+      const currentScroll = feed.scrollTop;
+      const scrollDelta = Math.floor(Math.random() * (750 - 400 + 1)) + 400;
+      feed.scrollTop += scrollDelta;
+      await jitter(1500, 2200);
+
+      if (!checkActive()) break;
+
+      if (Math.abs(feed.scrollTop - currentScroll) < 10 || feed.scrollTop === lastScrollTop) {
+        stuckCount++;
+        const endText = feed.textContent || '';
+        if (
+          endText.includes("You've reached the end") ||
+          endText.includes('তালিকায় আর কোনো স্থান নেই') ||
+          stuckCount >= 5
+        ) {
+          console.log('[LeadScraper] Reached end of list.');
+          break;
+        }
+      } else {
+        stuckCount = 0;
+      }
+      lastScrollTop = feed.scrollTop;
+      continue;
+    }
+
+    stuckCount = 0;
+
+    for (const anchor of newAnchors) {
+      if (!checkActive()) break;
+
+      const placeId = getPlaceId(anchor.href);
+      if (!placeId || processedIds.has(placeId)) continue;
+      processedIds.add(placeId);
+
+      // ── Step 1: Resilient Name Parsing (clean parser, no broken double-split) ──
+      const rawLabel = anchor.getAttribute('aria-label') || '';
+      const cardName = parseCardName(rawLabel) || parseCardName(anchor.textContent || '');
+
+      // ── Step 2: Get card-level data without clicking ──
+      const cardContainer =
+        anchor.closest('div.Nv251d, div[jsaction*="mouseover"], div[role="article"]') ||
+        anchor.parentElement?.parentElement ||
+        anchor.parentElement;
+
+      const cardPhone = cardContainer ? extractPhoneFromElement(cardContainer as HTMLElement) : '';
+      const cardWebsite = cardContainer ? extractWebsiteFromElement(cardContainer as HTMLElement) : '';
+
+      // ── Step 3: Scroll card into view ──
+      try {
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch {
+        /* ignore scroll errors */
+      }
+      await jitter(300, 500);
+      if (!checkActive()) break;
+
+      // Capture current h1 BEFORE clicking
+      const prevH1 = getDetailPanelH1();
+
+      // Click the card
+      anchor.click();
+
+      // Wait until h1 changes (confirms detail panel updated with new place)
+      await waitForPanelUpdate(prevH1, 5000, checkActive);
+      if (!checkActive()) break;
+
+      // Anti-bot delay after opening detail panel (1200ms–2500ms)
+      await jitter(1200, 2500);
+      if (!checkActive()) break;
+
+      // ── Step 4: Extract detail panel data ──
+      const detail = extractFromDetailPanel();
+
+      // ── Step 5: Build final lead ──
+      const lead: Lead = {
+        source: 'Google Maps',
+        name: cardName || detail.name || '',
+        phone: detail.phone || cardPhone || '',
+        email: detail.email || '',
+        website: detail.website || cardWebsite || '',
+        address: detail.address || '',
+      };
+
+      if (lead.name) {
+        console.log('[LeadScraper] Lead:', lead.name, '| phone:', lead.phone, '| web:', lead.website);
+        saveLead(lead);
+      }
+
+      await jitter(200, 400);
+    }
+  }
+
+  console.log('[LeadScraper] Extraction finished. Total processed places:', processedIds.size);
+}
+</file>
+
+<file path="src/hooks/useExtraction.ts">
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { Lead, Status, ExtractionStatusResponse } from '@/types/lead';
+import { sendMessageWithRetry } from '@/lib/messaging';
+
+// Detect which platform is open in the active tab
+export function detectPlatform(url: string): string {
+  if (url.includes('google.com/maps')) return 'Google Maps';
+  if (url.includes('facebook.com')) return 'Facebook';
+  if (url.includes('linkedin.com')) return 'LinkedIn';
+  return 'Unknown';
+}
+
+export function useExtraction() {
+  const [status, setStatus] = useState<Status>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [query, setQuery] = useState('');
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [platform, setPlatform] = useState('Unknown');
+  const [tabId, setTabId] = useState<number | null>(null);
+  const [filterText, setFilterText] = useState('');
+  const [filterNoWebsiteOnly, setFilterNoWebsiteOnly] = useState(false);
+
+  // ── Fetch active browser tab info ──────────────────────────────────────────
+  useEffect(() => {
+    try {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+        if (chrome.runtime.lastError) return;
+        const tab = tabs[0];
+        if (tab?.url) setPlatform(detectPlatform(tab.url));
+        if (tab?.id) setTabId(tab.id);
+      });
+    } catch {
+      /* ignore tab query errors */
+    }
+  }, []);
+
+  // ── Restore State on Popup Open ───────────────────────────────────────────
+  useEffect(() => {
+    sendMessageWithRetry({ type: 'GET_EXTRACTION_STATUS' }, (res: ExtractionStatusResponse) => {
+      if (res?.isExtracting) {
+        setStatus('extracting');
+        if (res.activeQuery) {
+          setQuery(res.activeQuery);
+        }
+        if (res.activeTabId) {
+          setTabId(res.activeTabId);
+        }
+      }
+    });
+  }, []);
+
+  // ── Load stored leads ─────────────────────────────────────────────────────
+  const refreshLeads = useCallback(() => {
+    sendMessageWithRetry({ type: 'GET_LEADS' }, (res) => {
+      if (res?.leads) setLeads(res.leads);
+    });
+  }, []);
+
+  useEffect(() => {
+    refreshLeads();
+  }, [refreshLeads]);
+
+  // ── Poll while extracting to reflect real-time lead counts ────────────────
+  useEffect(() => {
+    if (status !== 'extracting') return;
+    const id = setInterval(refreshLeads, 1500);
+    return () => clearInterval(id);
+  }, [status, refreshLeads]);
+
+  // ── Listen for messages from background/content ───────────────────────────
+  useEffect(() => {
+    const handler = (msg: any) => {
+      if (msg.type === 'EXTRACTION_DONE') {
+        setStatus('done');
+        refreshLeads();
+      }
+      if (msg.type === 'EXTRACTION_ERROR') {
+        setStatus('error');
+        setErrorMsg(msg.message || 'Something went wrong.');
+      }
+      if (msg.type === 'LEADS_UPDATED') {
+        refreshLeads();
+      }
+    };
+    chrome.runtime.onMessage.addListener(handler);
+    return () => chrome.runtime.onMessage.removeListener(handler);
+  }, [refreshLeads]);
+
+  // ── Start extraction ──────────────────────────────────────────────────────
+  const handleStart = () => {
+    if (!query.trim()) return;
+    setStatus('extracting');
+    setErrorMsg('');
+
+    const sendStartCmd = (targetTabId: number) => {
+      sendMessageWithRetry(
+        { type: 'START_SEARCH', query: query.trim(), tabId: targetTabId },
+        (res) => {
+          if (!res) {
+            setStatus('error');
+            setErrorMsg('Could not connect to background service. Please reload the extension.');
+          } else if (res?.status === 'error') {
+            setStatus('error');
+            setErrorMsg(res.message || 'Invalid tab.');
+          }
+        }
+      );
+    };
+
+    if (tabId) {
+      sendStartCmd(tabId);
+    } else {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+        const id = tabs[0]?.id;
+        if (id) {
+          setTabId(id);
+          sendStartCmd(id);
+        } else {
+          setStatus('error');
+          setErrorMsg('No active tab found.');
+        }
+      });
+    }
+  };
+
+  // ── Stop extraction ───────────────────────────────────────────────────────
+  const handleStop = () => {
+    setStatus('idle');
+    if (tabId) {
+      sendMessageWithRetry({ type: 'STOP_SEARCH', tabId });
+    }
+  };
+
+  // ── Clear leads with prompt confirmation ──────────────────────────────────
+  const handleClear = () => {
+    if (leads.length === 0) return;
+    const confirmed = window.confirm('Are you sure you want to clear all extracted leads?');
+    if (!confirmed) return;
+
+    sendMessageWithRetry({ type: 'CLEAR_LEADS' }, () => {
+      setLeads([]);
+    });
+  };
+
+  // ── Exports ───────────────────────────────────────────────────────────────
+  const handleExportCSV = () => {
+    sendMessageWithRetry({ type: 'EXPORT_CSV' });
+  };
+
+  const handleExportXML = () => {
+    sendMessageWithRetry({ type: 'EXPORT_XML' });
+  };
+
+  // ── Filtered leads calculation ────────────────────────────────────────────
+  const filteredLeads = useMemo(() => {
+    const term = filterText.toLowerCase().trim();
+    return leads.filter((lead) => {
+      if (filterNoWebsiteOnly && lead.website) return false;
+      if (!term) return true;
+      if (term === 'no website' || term === 'missing website') {
+        return !lead.website;
+      }
+      return (
+        (lead.name || '').toLowerCase().includes(term) ||
+        (lead.phone || '').toLowerCase().includes(term) ||
+        (lead.email || '').toLowerCase().includes(term) ||
+        (lead.website || '').toLowerCase().includes(term) ||
+        (lead.address || '').toLowerCase().includes(term)
+      );
+    });
+  }, [leads, filterText, filterNoWebsiteOnly]);
+
+  const isExtracting = status === 'extracting';
+  const platformColor =
+    platform === 'Google Maps'
+      ? '#34a853'
+      : platform === 'Facebook'
+      ? '#1877f2'
+      : platform === 'LinkedIn'
+      ? '#0a66c2'
+      : '#6b7280';
+
+  const noWebsiteCount = useMemo(() => leads.filter((l) => !l.website).length, [leads]);
+
+  return {
+    status,
+    errorMsg,
+    query,
+    setQuery,
+    leads,
+    platform,
+    platformColor,
+    tabId,
+    filterText,
+    setFilterText,
+    filterNoWebsiteOnly,
+    setFilterNoWebsiteOnly,
+    filteredLeads,
+    noWebsiteCount,
+    isExtracting,
+    handleStart,
+    handleStop,
+    handleClear,
+    handleExportCSV,
+    handleExportXML,
+    refreshLeads,
+  };
+}
+</file>
+
+<file path="src/lib/exporters.ts">
+import type { Lead } from '@/types/lead';
+
+export function generateCsv(leads: Lead[]): string {
+  const rows = leads.map((l) =>
+    [l.source, l.name, l.phone, l.email, l.website, l.address ?? '']
+      .map((v) => `"${(v || '').replace(/"/g, '""')}"`)
+      .join(',')
+  );
+  // \uFEFF is UTF-8 Byte Order Mark for proper rendering in Excel
+  return '\uFEFF' + ['Source,Name,Phone,Email,Website,Address', ...rows].join('\r\n');
+}
+
+export function generateXml(leads: Lead[]): string {
+  const x = (s: string) =>
+    (s || '').replace(/[<>&'"]/g, (c) =>
+      ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c] ?? c)
+    );
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<leads>\n';
+  for (const l of leads) {
+    xml += `  <lead>\n    <source>${x(l.source)}</source>\n    <name>${x(l.name)}</name>\n`;
+    xml += `    <phone>${x(l.phone)}</phone>\n    <email>${x(l.email)}</email>\n`;
+    xml += `    <website>${x(l.website)}</website>\n    <address>${x(l.address ?? '')}</address>\n  </lead>\n`;
+  }
+  xml += '</leads>';
+  return xml;
+}
+
+export function exportCsv(leads: Lead[], callback?: () => void): boolean {
+  if (!leads.length) return false;
+  const csv = generateCsv(leads);
+  chrome.downloads.download(
+    {
+      url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
+      filename: `leads_${Date.now()}.csv`,
+      saveAs: true,
+    },
+    () => callback?.()
+  );
+  return true;
+}
+
+export function exportXml(leads: Lead[], callback?: () => void): boolean {
+  if (!leads.length) return false;
+  const xml = generateXml(leads);
+  chrome.downloads.download(
+    {
+      url: 'data:application/xml;charset=utf-8,' + encodeURIComponent(xml),
+      filename: `leads_${Date.now()}.xml`,
+      saveAs: true,
+    },
+    () => callback?.()
+  );
+  return true;
+}
+</file>
+
+<file path="src/lib/messaging.ts">
+export function sendMessageWithRetry(
+  msg: object,
+  callback?: (res: any) => void,
+  retries = 5,
+  delayMs = 300
+) {
+  const attempt = (remaining: number) => {
+    try {
+      chrome.runtime.sendMessage(msg, (res) => {
+        if (chrome.runtime.lastError) {
+          const errMsg = chrome.runtime.lastError.message || '';
+          if (remaining > 0 && errMsg.includes('Receiving end does not exist')) {
+            setTimeout(() => attempt(remaining - 1), delayMs);
+          } else {
+            callback?.(undefined);
+          }
+          return;
+        }
+        callback?.(res);
+      });
+    } catch {
+      if (remaining > 0) {
+        setTimeout(() => attempt(remaining - 1), delayMs);
+      } else {
+        callback?.(undefined);
+      }
+    }
+  };
+  attempt(retries);
+}
+</file>
+
+<file path="src/lib/url.ts">
+export function normalizeUrl(url: string): string {
+  if (!url) return '';
+  return url
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/+$/, '');
+}
+
+export function isInternalGoogleDomain(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === 'google.com' ||
+      host.endsWith('.google.com') ||
+      host.includes('.google.') ||
+      host.endsWith('gstatic.com') ||
+      host.endsWith('ggpht.com') ||
+      host.endsWith('googleusercontent.com') ||
+      host.endsWith('goo.gl')
+    );
+  } catch {
+    return (
+      url.includes('google.com') ||
+      url.includes('gstatic.com') ||
+      url.includes('ggpht.com')
+    );
+  }
+}
+</file>
+
 <file path="src/lib/utils.ts">
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
@@ -811,6 +1619,33 @@ import { twMerge } from "tailwind-merge"
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+</file>
+
+<file path="src/types/lead.ts">
+export interface Lead {
+  source: string;
+  name: string;
+  phone: string;
+  email: string;
+  website: string;
+  address?: string;
+}
+
+export interface ExtractionStatus {
+  isExtracting: boolean;
+  activeQuery: string;
+  activeTabId: number | null;
+}
+
+export type ExtractionStatusResponse = ExtractionStatus;
+
+export const DEFAULT_EXTRACTION_STATUS: ExtractionStatus = {
+  isExtracting: false,
+  activeQuery: '',
+  activeTabId: null,
+};
+
+export type Status = 'idle' | 'extracting' | 'done' | 'error';
 </file>
 
 <file path=".gitignore">
@@ -1143,66 +1978,6 @@ dist/assets/index.html-Dxl0LiB1.js                         200.81 kB │ gzip: 6
 [32m✓ built in 2.51s[39m
 </file>
 
-<file path="components.json">
-{
-  "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "base-nova",
-  "rsc": false,
-  "tsx": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/index.css",
-    "baseColor": "neutral",
-    "cssVariables": true,
-    "prefix": ""
-  },
-  "iconLibrary": "lucide",
-  "rtl": false,
-  "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
-  },
-  "menuColor": "default",
-  "menuAccent": "subtle",
-  "registries": {}
-}
-</file>
-
-<file path="eslint.config.js">
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
-    ],
-    languageOptions: {
-      globals: globals.browser,
-    },
-    rules: {
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
-  },
-])
-</file>
-
 <file path="index.html">
 <!doctype html>
 <html lang="en">
@@ -1295,39 +2070,6 @@ export default defineConfig([
 ```
 </file>
 
-<file path="tsconfig.app.json">
-{
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "target": "es2023",
-    "lib": ["ES2023", "DOM"],
-    "module": "esnext",
-    "types": ["vite/client", "chrome"],
-    "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
-
-    /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": false,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
-  },
-  "include": ["src"]
-}
-</file>
-
 <file path="tsconfig.json">
 {
   "files": [],
@@ -1372,6 +2114,68 @@ export default defineConfig([
 }
 </file>
 
+<file path="src/components/ui/button.tsx">
+import { Button as ButtonPrimitive } from "@base-ui/react/button"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        outline:
+          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+        ghost:
+          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        destructive:
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default:
+          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        icon: "size-8",
+        "icon-xs":
+          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm":
+          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
+        "icon-lg": "size-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function Button({
+  className,
+  variant = "default",
+  size = "default",
+  ...props
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  return (
+    <ButtonPrimitive
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  )
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export { Button, buttonVariants }
+</file>
+
 <file path="src/main.tsx">
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -1383,6 +2187,246 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+</file>
+
+<file path="components.json">
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "rtl": false,
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
+}
+</file>
+
+<file path="eslint.config.js">
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+    },
+    rules: {
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+])
+</file>
+
+<file path="tsconfig.app.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client", "chrome", "react", "react-dom"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="src/background/background.ts">
+import type { Lead } from '@/types/lead';
+import { exportCsv, exportXml } from '@/lib/exporters';
+import {
+  getLeads,
+  clearLeads,
+  getExtractionStatus,
+  setExtractionStatus,
+  enqueueSaveLead,
+} from './storage';
+import { navigateTabAndScrape, sendStartScrapingWithRetry } from './navigation';
+
+export type { Lead, ExtractionStatus } from '@/types/lead';
+
+// ── Tab Lifecycle Cleanups ───────────────────────────────────────────────────
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const status = await getExtractionStatus();
+  if (status.isExtracting && status.activeTabId === tabId) {
+    await setExtractionStatus({ isExtracting: false, activeTabId: null });
+  }
+});
+
+// ── Message Hub ──────────────────────────────────────────────────────────────
+chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
+
+  // ── GET_EXTRACTION_STATUS ──────────────────────────────────────────────────
+  if (req.type === 'GET_EXTRACTION_STATUS') {
+    getExtractionStatus().then((status) => sendResponse(status));
+    return true;
+  }
+
+  // ── START_SEARCH: navigate tab if needed then trigger scraper ──────────────
+  if (req.type === 'START_SEARCH') {
+    const { query, tabId } = req;
+    const targetUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}/`;
+
+    const handleNavigation = async (validTabId: number) => {
+      await setExtractionStatus({
+        isExtracting: true,
+        activeQuery: query || '',
+        activeTabId: validTabId,
+      });
+
+      chrome.tabs.get(validTabId, (tab) => {
+        if (chrome.runtime.lastError || !tab) {
+          console.error('[BG] tab get error:', chrome.runtime.lastError?.message);
+          setExtractionStatus({ isExtracting: false });
+          return;
+        }
+
+        if (tab.url && tab.url.includes('google.com/maps/search/')) {
+          if (tab.url !== targetUrl) {
+            navigateTabAndScrape(validTabId, targetUrl);
+          } else {
+            sendStartScrapingWithRetry(validTabId);
+          }
+        } else {
+          navigateTabAndScrape(validTabId, targetUrl);
+        }
+      });
+    };
+
+    if (tabId) {
+      handleNavigation(tabId);
+    } else {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+        if (tabs[0]?.id) handleNavigation(tabs[0].id);
+      });
+    }
+
+    sendResponse({ status: 'navigating' });
+    return false;
+  }
+
+  // ── STOP: forward stop to content script ─────────────────────────────────
+  if (req.type === 'STOP_SEARCH') {
+    setExtractionStatus({ isExtracting: false });
+    if (req.tabId) {
+      chrome.tabs.sendMessage(req.tabId, { action: 'STOP_EXTRACTION' }, () => {
+        if (chrome.runtime.lastError) {
+          /* ignore */
+        }
+      });
+    }
+    sendResponse({ status: 'stopping' });
+    return false;
+  }
+
+  // ── SAVE_LEAD (Serialized Queue & Deduplication) ──────────────────────────
+  if (req.type === 'SAVE_LEAD') {
+    enqueueSaveLead(req.payload as Lead).then((res) => {
+      sendResponse(res);
+    });
+    return true;
+  }
+
+  // ── GET_LEADS ─────────────────────────────────────────────────────────────
+  if (req.type === 'GET_LEADS') {
+    getLeads().then((leads) => sendResponse({ leads }));
+    return true;
+  }
+
+  // ── CLEAR_LEADS ───────────────────────────────────────────────────────────
+  if (req.type === 'CLEAR_LEADS') {
+    clearLeads().then(() => {
+      sendResponse({ status: 'ok' });
+    });
+    return true;
+  }
+
+  // ── Forward DONE / ERROR to popup and update state ───────────────────────
+  if (req.type === 'EXTRACTION_DONE' || req.type === 'EXTRACTION_ERROR') {
+    setExtractionStatus({ isExtracting: false });
+    chrome.runtime.sendMessage(req, () => {
+      if (chrome.runtime.lastError) {
+        /* ignore popup closed cleanly */
+      }
+    });
+    return false;
+  }
+
+  // ── EXPORT CSV (RFC 4180 + UTF-8 BOM) ─────────────────────────────────────
+  if (req.type === 'EXPORT_CSV') {
+    (async () => {
+      const leads = await getLeads();
+      const success = exportCsv(leads, () => sendResponse({ status: 'ok' }));
+      if (!success) {
+        sendResponse({ status: 'error' });
+      }
+    })();
+    return true;
+  }
+
+  // ── EXPORT XML ────────────────────────────────────────────────────────────
+  if (req.type === 'EXPORT_XML') {
+    (async () => {
+      const leads = await getLeads();
+      const success = exportXml(leads, () => sendResponse({ status: 'ok' }));
+      if (!success) {
+        sendResponse({ status: 'error' });
+      }
+    })();
+    return true;
+  }
+});
 </file>
 
 <file path="package.json">
@@ -1622,928 +2666,6 @@ export default defineConfig({
 }
 </file>
 
-<file path="src/content/index.ts">
-try {
-  let isExtracting = false;
-  console.log("[LeadScraper] Content script loaded on:", window.location.href);
-
-  const getBodyText = () =>
-    document.body?.textContent || document.documentElement?.textContent || "";
-
-  // ── Helpers & Anti-Bot Protection ──────────────────────────────────────────
-  const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-  const jitter = (min: number, max: number) =>
-    sleep(Math.floor(Math.random() * (max - min + 1) + min));
-
-  // ── Message listener ───────────────────────────────────────────────────────
-  chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
-    try {
-      if (req.action === "PING") {
-        sendResponse({ alive: true, url: window.location.href });
-        return true;
-      }
-      if (req.action === "START_SCRAPING") {
-        if (isExtracting) {
-          sendResponse({ status: "already_running" });
-          return true;
-        }
-        isExtracting = true;
-        startScrapeProcess()
-          .catch((err) => {
-            console.error("[LeadScraper] Error:", err);
-            chrome.runtime.sendMessage(
-              { type: "EXTRACTION_ERROR", message: String(err?.message || err) },
-              () => {
-                if (chrome.runtime.lastError) {
-                  /* ignore */
-                }
-              }
-            );
-          })
-          .finally(() => {
-            isExtracting = false;
-            chrome.runtime.sendMessage({ type: "EXTRACTION_DONE" }, () => {
-              if (chrome.runtime.lastError) {
-                /* ignore */
-              }
-            });
-          });
-        sendResponse({ status: "started" });
-        return true;
-      }
-      if (req.action === "STOP_EXTRACTION") {
-        isExtracting = false;
-        sendResponse({ status: "stopped" });
-        return true;
-      }
-    } catch (e) {
-      console.warn("[LeadScraper] Listener error:", e);
-    }
-  });
-
-  async function waitFor(selector: string, timeout = 12000): Promise<Element | null> {
-    const end = Date.now() + timeout;
-    while (Date.now() < end && isExtracting) {
-      const el = document.querySelector(selector);
-      if (el) return el;
-      await sleep(300);
-    }
-    return null;
-  }
-
-  // Wait for h1 to change to a DIFFERENT value than prevText (means panel updated)
-  async function waitForPanelUpdate(prevH1Text: string, timeout = 5000): Promise<void> {
-    const end = Date.now() + timeout;
-    while (Date.now() < end && isExtracting) {
-      const h1 = getDetailPanelH1();
-      if (h1 && h1 !== prevH1Text) return;
-      await sleep(150);
-    }
-  }
-
-  // Get the h1 from the detail panel only (not the search results title)
-  function getDetailPanelH1(): string {
-    const panel =
-      document.querySelector('div[role="main"] div.m6QEdf') ||
-      document.querySelector('div.bJ2h1d') ||
-      document.querySelector('div[data-section-id="ap"]') ||
-      document.querySelector('div[jsaction*="pane"]');
-
-    if (panel) {
-      const h1 = panel.querySelector('h1');
-      if (h1?.textContent?.trim()) return h1.textContent.trim();
-    }
-
-    const h1 = document.querySelector('h1.DUwDvf, h1.fontTitleLarge');
-    return h1?.textContent?.trim() || '';
-  }
-
-  const PHONE_REGEX = /(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/g;
-  const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-
-  // ── Clean Name Parser (replaces broken double split) ──────────────────────
-  function parseCardName(rawText: string): string {
-    if (!rawText) return "";
-    // Google Maps separates card title from rating/category with middle dot, bullet, or pipe
-    const firstChunk = rawText.split(/[·•|\n]/)[0].trim();
-
-    // Strip ratings, review counts, stars if present in the chunk
-    const cleaned = firstChunk
-      .replace(/★\s*[\d.]+/g, "")
-      .replace(/\b\d\.\d\s*(\([\d,]+\))?/g, "")
-      .replace(/\([\d,]+\)/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    return cleaned || firstChunk;
-  }
-
-  // ── Google Domain Filter ──────────────────────────────────────────────────
-  function isInternalGoogleDomain(url: string): boolean {
-    try {
-      const parsed = new URL(url);
-      const host = parsed.hostname.toLowerCase();
-      return (
-        host === "google.com" ||
-        host.endsWith(".google.com") ||
-        host.includes(".google.") ||
-        host.endsWith("gstatic.com") ||
-        host.endsWith("ggpht.com") ||
-        host.endsWith("googleusercontent.com") ||
-        host.endsWith("goo.gl")
-      );
-    } catch {
-      return (
-        url.includes("google.com") ||
-        url.includes("gstatic.com") ||
-        url.includes("ggpht.com")
-      );
-    }
-  }
-
-  // ── Main orchestrator ──────────────────────────────────────────────────────
-  async function startScrapeProcess() {
-    const isMaps =
-      window.location.hostname.includes("google.com") &&
-      window.location.pathname.includes("/maps");
-    if (isMaps) await scrapeGoogleMaps();
-    else await scrapeGenericPage();
-  }
-
-  // ── Google Maps Scraper ────────────────────────────────────────────────────
-  async function scrapeGoogleMaps() {
-    console.log("[LeadScraper] Starting Google Maps extraction...");
-
-    // Wait for results feed
-    let feed: Element | null = await waitFor('div[role="feed"]', 12000);
-    if (!feed) {
-      feed =
-        document.querySelector('div[aria-label*="Results" i]') ||
-        document.querySelector('div[aria-label*="ফলাফল" i]') ||
-        document.querySelector("div.m6QEdf[aria-label]") ||
-        document.querySelector("div.m6QEdf");
-    }
-
-    if (!feed) {
-      // Single place view fallback
-      const singleLead = extractFromDetailPanel();
-      if (singleLead?.name) {
-        saveLead(singleLead);
-        return;
-      }
-      chrome.runtime.sendMessage(
-        {
-          type: "EXTRACTION_ERROR",
-          message: "Google Maps search results not found. Please open a search page first.",
-        },
-        () => {
-          if (chrome.runtime.lastError) {
-            /* ignore */
-          }
-        }
-      );
-      return;
-    }
-
-    await jitter(1000, 1500);
-
-    // Track processed places by their unique place-ID in href
-    const processedIds = new Set<string>();
-    let stuckCount = 0;
-    let lastScrollTop = -1;
-
-    while (isExtracting) {
-      // Collect unprocessed result cards
-      const allAnchors = Array.from(
-        document.querySelectorAll<HTMLAnchorElement>('a[href*="/maps/place/"]')
-      );
-
-      // Deduplicate by extracting the place CID/ID from the URL
-      const newAnchors = allAnchors.filter((a) => {
-        const id = getPlaceId(a.href);
-        return id && !processedIds.has(id);
-      });
-
-      if (!isExtracting) break;
-
-      if (newAnchors.length === 0) {
-        // Humanized dynamic scroll increment (400px–750px)
-        const currentScroll = feed.scrollTop;
-        const scrollDelta = Math.floor(Math.random() * (750 - 400 + 1)) + 400;
-        feed.scrollTop += scrollDelta;
-        await jitter(1500, 2200);
-
-        if (!isExtracting) break;
-
-        if (Math.abs(feed.scrollTop - currentScroll) < 10 || feed.scrollTop === lastScrollTop) {
-          stuckCount++;
-          const endText = feed.textContent || "";
-          if (
-            endText.includes("You've reached the end") ||
-            endText.includes("তালিকায় আর কোনো স্থান নেই") ||
-            stuckCount >= 5
-          ) {
-            console.log("[LeadScraper] Reached end of list.");
-            break;
-          }
-        } else {
-          stuckCount = 0;
-        }
-        lastScrollTop = feed.scrollTop;
-        continue;
-      }
-
-      stuckCount = 0;
-
-      for (const anchor of newAnchors) {
-        if (!isExtracting) break;
-
-        const placeId = getPlaceId(anchor.href);
-        if (!placeId || processedIds.has(placeId)) continue;
-        processedIds.add(placeId);
-
-        // ── Step 1: Resilient Name Parsing (clean parser, no broken double-split) ──
-        const rawLabel = anchor.getAttribute("aria-label") || "";
-        const cardName = parseCardName(rawLabel) || parseCardName(anchor.textContent || "");
-
-        // ── Step 2: Get card-level data without clicking ──
-        const cardContainer =
-          anchor.closest('div.Nv251d, div[jsaction*="mouseover"], div[role="article"]') ||
-          anchor.parentElement?.parentElement ||
-          anchor.parentElement;
-
-        const cardPhone = cardContainer ? extractPhoneFromElement(cardContainer as HTMLElement) : "";
-        const cardWebsite = cardContainer ? extractWebsiteFromElement(cardContainer as HTMLElement) : "";
-
-        // ── Step 3: Scroll card into view ──
-        try {
-          anchor.scrollIntoView({ behavior: "smooth", block: "center" });
-        } catch {
-          /* ignore scroll errors */
-        }
-        await jitter(300, 500);
-        if (!isExtracting) break;
-
-        // Capture current h1 BEFORE clicking
-        const prevH1 = getDetailPanelH1();
-
-        // Click the card
-        anchor.click();
-
-        // Wait until h1 changes (confirms detail panel updated with new place)
-        await waitForPanelUpdate(prevH1);
-        if (!isExtracting) break;
-
-        // Anti-bot delay after opening detail panel (1200ms–2500ms)
-        await jitter(1200, 2500);
-        if (!isExtracting) break;
-
-        // ── Step 4: Extract detail panel data ──
-        const detail = extractFromDetailPanel();
-
-        // ── Step 5: Build final lead ──
-        const lead = {
-          source: "Google Maps",
-          name: cardName || detail.name || "",
-          phone: detail.phone || cardPhone || "",
-          email: detail.email || "",
-          website: detail.website || cardWebsite || "",
-          address: detail.address || "",
-        };
-
-        if (lead.name) {
-          console.log("[LeadScraper] Lead:", lead.name, "| phone:", lead.phone, "| web:", lead.website);
-          saveLead(lead);
-        }
-
-        await jitter(200, 400);
-      }
-    }
-
-    console.log("[LeadScraper] Extraction finished. Total processed places:", processedIds.size);
-  }
-
-  // Extract place ID from Google Maps URL for reliable tracking
-  function getPlaceId(href: string): string {
-    try {
-      const match = href.match(/\/maps\/place\/([^/]+)/);
-      if (match) return decodeURIComponent(match[1]);
-    } catch {
-      /* ignore URI decode errors */
-    }
-    return href;
-  }
-
-  // Save lead to background queue with proper error handling
-  function saveLead(lead: object) {
-    chrome.runtime.sendMessage({ type: "SAVE_LEAD", payload: lead }, (res) => {
-      if (chrome.runtime.lastError) {
-        console.warn("[LeadScraper] SAVE_LEAD error:", chrome.runtime.lastError.message);
-      } else {
-        console.log("[LeadScraper] Saved. Total:", res?.count);
-      }
-    });
-  }
-
-  // ── Extract phone from element (with clean phone:tel handling) ─────────────
-  function extractPhoneFromElement(container: HTMLElement): string {
-    const phoneEl =
-      container.querySelector('[data-item-id^="phone:tel:"]') ||
-      container.querySelector('button[data-item-id^="phone:tel:"]') ||
-      container.querySelector('button[data-tooltip*="phone" i]') ||
-      container.querySelector('button[aria-label*="phone" i], button[aria-label*="Phone" i]') ||
-      container.querySelector('button[aria-label*="ফোন" i]') ||
-      container.querySelector('[data-item-id*="phone"]');
-
-    if (phoneEl) {
-      const itemId = phoneEl.getAttribute("data-item-id") || "";
-      if (itemId.startsWith("phone:tel:")) {
-        return itemId.replace("phone:tel:", "").trim();
-      }
-      const label = phoneEl.getAttribute("aria-label") || phoneEl.textContent || "";
-      const m = label.match(/(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/);
-      if (m && m[0].replace(/\D/g, "").length >= 7) {
-        return m[0].trim();
-      }
-    }
-
-    const text = container.textContent || "";
-    const matches = text.match(PHONE_REGEX);
-    if (matches) {
-      const valid = matches.find(
-        (p) => p.replace(/\D/g, "").length >= 7 && p.replace(/\D/g, "").length <= 15
-      );
-      if (valid) return valid.trim();
-    }
-    return "";
-  }
-
-  // ── Extract website from element (ignoring internal Google domains) ────────
-  function extractWebsiteFromElement(container: HTMLElement): string {
-    const webEl = container.querySelector<HTMLAnchorElement>(
-      'a[data-item-id="authority"], a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
-    );
-    if (webEl?.href && !isInternalGoogleDomain(webEl.href)) {
-      return webEl.href;
-    }
-
-    const allAnchors = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[href^='http']"));
-    for (const a of allAnchors) {
-      if (a.href && !isInternalGoogleDomain(a.href)) {
-        return a.href;
-      }
-    }
-    return "";
-  }
-
-  // ── Extract full lead from detail panel ───────────────────────────────────
-  function extractFromDetailPanel() {
-    const lead = { source: "Google Maps", name: "", phone: "", email: "", website: "", address: "" };
-
-    const detailPane =
-      document.querySelector('div[role="main"] div.m6QEdf') ||
-      document.querySelector('div.bJ2h1d') ||
-      document.querySelector('div[role="main"]') ||
-      document;
-
-    // Name
-    const titleEl = detailPane.querySelector("h1.DUwDvf, h1.fontTitleLarge, h1");
-    lead.name = titleEl?.textContent?.trim() || "";
-
-    // Phone — clean extraction from data-item-id="phone:tel:"
-    lead.phone = extractPhoneFromElement(detailPane as HTMLElement);
-
-    // Website — ignores internal Google domains
-    lead.website = extractWebsiteFromElement(detailPane as HTMLElement);
-
-    // Address
-    const addrEl = detailPane.querySelector(
-      'button[data-item-id="address"], button[aria-label*="address" i], button[aria-label*="ঠিকানা" i]'
-    );
-    if (addrEl) {
-      const raw =
-        addrEl.getAttribute("aria-label")?.replace(/^address:?\s*/i, "").replace(/^ঠিকানা:?\s*/i, "").trim() ||
-        addrEl.textContent?.trim() ||
-        "";
-      lead.address = raw;
-    }
-
-    // Email on Maps panel (if listed)
-    const paneText = detailPane.textContent || "";
-    const emailMatches = paneText.match(EMAIL_REGEX);
-    if (emailMatches) {
-      const validEmail = emailMatches.find(
-        (e) => !e.endsWith(".png") && !e.endsWith(".jpg") && !e.endsWith(".js") && !e.endsWith(".webp")
-      );
-      if (validEmail) lead.email = validEmail;
-    }
-
-    return lead;
-  }
-
-  // ── Generic page scraper (Facebook, LinkedIn, etc.) ───────────────────────
-  async function scrapeGenericPage() {
-    console.log("[LeadScraper] Generic scraper on:", window.location.href);
-    const pageText = getBodyText();
-    const title = document.title || document.querySelector("h1")?.textContent || "";
-    const emails = Array.from(new Set(pageText.match(EMAIL_REGEX) || [])).filter(
-      (e) => !e.endsWith(".png") && !e.endsWith(".jpg") && !e.endsWith(".svg")
-    );
-    const phones = Array.from(new Set(pageText.match(PHONE_REGEX) || [])).filter(
-      (p) => p.replace(/\D/g, "").length >= 7 && p.replace(/\D/g, "").length <= 15
-    );
-    let source = "Web Page";
-    if (window.location.hostname.includes("facebook.com")) source = "Facebook";
-    if (window.location.hostname.includes("linkedin.com")) source = "LinkedIn";
-    const lead = {
-      source,
-      name: title.trim().substring(0, 100),
-      phone: phones[0] || "",
-      email: emails[0] || "",
-      website: window.location.href,
-      address: "",
-    };
-    if (lead.name && (lead.phone || lead.email)) saveLead(lead);
-  }
-} catch (globalErr) {
-  console.warn("[LeadScraper] Init error:", globalErr);
-}
-</file>
-
-<file path="src/App.tsx">
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import {
-  Search,
-  Loader2,
-  Download,
-  Trash2,
-  MapPin,
-  Phone,
-  Globe,
-  AlertCircle,
-  CheckCircle2,
-  Mail,
-  Filter,
-  X,
-} from 'lucide-react'
-
-interface Lead {
-  source: string
-  name: string
-  phone: string
-  email: string
-  website: string
-  address?: string
-}
-
-interface ExtractionStatusResponse {
-  isExtracting: boolean
-  activeQuery: string
-  activeTabId: number | null
-}
-
-// ── Retry helper: MV3 service workers can sleep; retry until they respond ──────
-function sendMessageWithRetry(
-  msg: object,
-  callback?: (res: any) => void,
-  retries = 5,
-  delayMs = 300
-) {
-  const attempt = (remaining: number) => {
-    try {
-      chrome.runtime.sendMessage(msg, (res) => {
-        if (chrome.runtime.lastError) {
-          const errMsg = chrome.runtime.lastError.message || ''
-          if (remaining > 0 && errMsg.includes('Receiving end does not exist')) {
-            setTimeout(() => attempt(remaining - 1), delayMs)
-          } else {
-            callback?.(undefined)
-          }
-          return
-        }
-        callback?.(res)
-      })
-    } catch {
-      if (remaining > 0) {
-        setTimeout(() => attempt(remaining - 1), delayMs)
-      } else {
-        callback?.(undefined)
-      }
-    }
-  }
-  attempt(retries)
-}
-
-type Status = 'idle' | 'extracting' | 'done' | 'error'
-
-// Detect which platform is open in the active tab
-function detectPlatform(url: string): string {
-  if (url.includes('google.com/maps')) return 'Google Maps'
-  if (url.includes('facebook.com')) return 'Facebook'
-  if (url.includes('linkedin.com')) return 'LinkedIn'
-  return 'Unknown'
-}
-
-function App() {
-  const [status, setStatus] = useState<Status>('idle')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [query, setQuery] = useState('')
-  const [leads, setLeads] = useState<Lead[]>([])
-  const [platform, setPlatform] = useState('Unknown')
-  const [tabId, setTabId] = useState<number | null>(null)
-  const [filterText, setFilterText] = useState('')
-  const [filterNoWebsiteOnly, setFilterNoWebsiteOnly] = useState(false)
-
-  // ── Fetch active browser tab info ──────────────────────────────────────────
-  useEffect(() => {
-    try {
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-        if (chrome.runtime.lastError) return
-        const tab = tabs[0]
-        if (tab?.url) setPlatform(detectPlatform(tab.url))
-        if (tab?.id) setTabId(tab.id)
-      })
-    } catch {
-      /* ignore tab query errors */
-    }
-  }, [])
-
-  // ── Restore State on Popup Open ───────────────────────────────────────────
-  useEffect(() => {
-    sendMessageWithRetry({ type: 'GET_EXTRACTION_STATUS' }, (res: ExtractionStatusResponse) => {
-      if (res?.isExtracting) {
-        setStatus('extracting')
-        if (res.activeQuery) {
-          setQuery(res.activeQuery)
-        }
-        if (res.activeTabId) {
-          setTabId(res.activeTabId)
-        }
-      }
-    })
-  }, [])
-
-  // ── Load stored leads ─────────────────────────────────────────────────────
-  const refreshLeads = useCallback(() => {
-    sendMessageWithRetry({ type: 'GET_LEADS' }, (res) => {
-      if (res?.leads) setLeads(res.leads)
-    })
-  }, [])
-
-  useEffect(() => {
-    refreshLeads()
-  }, [refreshLeads])
-
-  // ── Poll while extracting to reflect real-time lead counts ────────────────
-  useEffect(() => {
-    if (status !== 'extracting') return
-    const id = setInterval(refreshLeads, 1500)
-    return () => clearInterval(id)
-  }, [status, refreshLeads])
-
-  // ── Listen for messages from background/content ───────────────────────────
-  useEffect(() => {
-    const handler = (msg: any) => {
-      if (msg.type === 'EXTRACTION_DONE') {
-        setStatus('done')
-        refreshLeads()
-      }
-      if (msg.type === 'EXTRACTION_ERROR') {
-        setStatus('error')
-        setErrorMsg(msg.message || 'Something went wrong.')
-      }
-      if (msg.type === 'LEADS_UPDATED') {
-        refreshLeads()
-      }
-    }
-    chrome.runtime.onMessage.addListener(handler)
-    return () => chrome.runtime.onMessage.removeListener(handler)
-  }, [refreshLeads])
-
-  // ── Start extraction ──────────────────────────────────────────────────────
-  const handleStart = () => {
-    if (!query.trim()) return
-    setStatus('extracting')
-    setErrorMsg('')
-
-    const sendStartCmd = (targetTabId: number) => {
-      sendMessageWithRetry(
-        { type: 'START_SEARCH', query: query.trim(), tabId: targetTabId },
-        (res) => {
-          if (!res) {
-            setStatus('error')
-            setErrorMsg('Could not connect to background service. Please reload the extension.')
-          } else if (res?.status === 'error') {
-            setStatus('error')
-            setErrorMsg(res.message || 'Invalid tab.')
-          }
-        }
-      )
-    }
-
-    if (tabId) {
-      sendStartCmd(tabId)
-    } else {
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-        const id = tabs[0]?.id
-        if (id) {
-          setTabId(id)
-          sendStartCmd(id)
-        } else {
-          setStatus('error')
-          setErrorMsg('No active tab found.')
-        }
-      })
-    }
-  }
-
-  // ── Stop extraction ───────────────────────────────────────────────────────
-  const handleStop = () => {
-    setStatus('idle')
-    if (tabId) {
-      sendMessageWithRetry({ type: 'STOP_SEARCH', tabId })
-    }
-  }
-
-  // ── Clear leads with prompt confirmation ──────────────────────────────────
-  const handleClear = () => {
-    if (leads.length === 0) return
-    const confirmed = window.confirm('Are you sure you want to clear all extracted leads?')
-    if (!confirmed) return
-
-    sendMessageWithRetry({ type: 'CLEAR_LEADS' }, () => {
-      setLeads([])
-    })
-  }
-
-  // ── Exports ───────────────────────────────────────────────────────────────
-  const handleExportCSV = () => {
-    sendMessageWithRetry({ type: 'EXPORT_CSV' })
-  }
-
-  const handleExportXML = () => {
-    sendMessageWithRetry({ type: 'EXPORT_XML' })
-  }
-
-  // ── Filtered leads calculation ────────────────────────────────────────────
-  const filteredLeads = useMemo(() => {
-    const term = filterText.toLowerCase().trim()
-    return leads.filter((lead) => {
-      if (filterNoWebsiteOnly && lead.website) return false
-      if (!term) return true
-      if (term === 'no website' || term === 'missing website') {
-        return !lead.website
-      }
-      return (
-        (lead.name || '').toLowerCase().includes(term) ||
-        (lead.phone || '').toLowerCase().includes(term) ||
-        (lead.email || '').toLowerCase().includes(term) ||
-        (lead.website || '').toLowerCase().includes(term) ||
-        (lead.address || '').toLowerCase().includes(term)
-      )
-    })
-  }, [leads, filterText, filterNoWebsiteOnly])
-
-  const isExtracting = status === 'extracting'
-  const platformColor =
-    platform === 'Google Maps'
-      ? '#34a853'
-      : platform === 'Facebook'
-      ? '#1877f2'
-      : platform === 'LinkedIn'
-      ? '#0a66c2'
-      : '#6b7280'
-
-  const noWebsiteCount = useMemo(() => leads.filter((l) => !l.website).length, [leads])
-
-  return (
-    <div className="w-[420px] min-h-[580px] bg-[#0f172a] text-slate-100 font-sans flex flex-col">
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="px-5 pt-5 pb-4 border-b border-slate-700/60">
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="text-lg font-bold tracking-tight text-white">Lead Scraper</h1>
-          <span
-            className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-            style={{
-              background: platformColor + '22',
-              color: platformColor,
-              border: `1px solid ${platformColor}55`,
-            }}
-          >
-            {platform}
-          </span>
-        </div>
-        <p className="text-xs text-slate-400">
-          {platform === 'Google Maps'
-            ? 'Scrapes all results from the active Google Maps search'
-            : 'Open Google Maps in this tab to start scraping'}
-        </p>
-      </div>
-
-      {/* ── Search Input ───────────────────────────────────────────────── */}
-      <div className="px-5 pt-4 flex flex-col gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder="e.g. English medium school Dhaka"
-            className="w-full h-10 rounded-lg bg-slate-800 border border-slate-700 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 transition"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !isExtracting && handleStart()}
-            disabled={isExtracting}
-          />
-        </div>
-
-        {/* Action button */}
-        {!isExtracting ? (
-          <button
-            onClick={handleStart}
-            disabled={!query.trim()}
-            className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
-          >
-            <Search className="h-4 w-4" />
-            Start Extraction
-          </button>
-        ) : (
-          <button
-            onClick={handleStop}
-            className="w-full h-10 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Stop Extraction
-          </button>
-        )}
-
-        {/* Status banners */}
-        {status === 'done' && (
-          <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-400/10 border border-emerald-500/30 rounded-lg px-3 py-2">
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-            Extraction complete — {leads.length} lead{leads.length !== 1 ? 's' : ''} found
-          </div>
-        )}
-        {status === 'error' && (
-          <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 border border-red-500/30 rounded-lg px-3 py-2">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            {errorMsg}
-          </div>
-        )}
-        {isExtracting && (
-          <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-400/10 border border-blue-500/30 rounded-lg px-3 py-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-            Navigating & Extracting… {leads.length} lead{leads.length !== 1 ? 's' : ''} collected
-          </div>
-        )}
-      </div>
-
-      {/* ── Leads Section ──────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col px-5 pt-3 pb-3 overflow-hidden">
-        {/* Results Bar */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
-              Results ({filteredLeads.length}
-              {filteredLeads.length !== leads.length ? ` / ${leads.length}` : ''})
-            </span>
-            {noWebsiteCount > 0 && (
-              <button
-                onClick={() => setFilterNoWebsiteOnly(!filterNoWebsiteOnly)}
-                className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
-                  filterNoWebsiteOnly
-                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'
-                }`}
-                title="Filter leads without websites"
-              >
-                No Website ({noWebsiteCount})
-              </button>
-            )}
-          </div>
-          <button
-            onClick={handleClear}
-            disabled={leads.length === 0 || isExtracting}
-            className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Clear
-          </button>
-        </div>
-
-        {/* Filter Input */}
-        {leads.length > 0 && (
-          <div className="relative mb-2">
-            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Filter leads by name, phone, or 'no website'..."
-              className="w-full h-8 rounded-md bg-slate-800/80 border border-slate-700/70 pl-8 pr-7 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-            />
-            {filterText && (
-              <button
-                onClick={() => setFilterText('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Leads Scroll Area */}
-        <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-0.5 min-h-0 max-h-[220px]">
-          {leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 text-sm gap-2 py-8">
-              <Search className="h-8 w-8 opacity-30" />
-              <span>No leads yet. Start an extraction above.</span>
-            </div>
-          ) : filteredLeads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs gap-1 py-8">
-              <span>No leads match current filter.</span>
-            </div>
-          ) : (
-            filteredLeads.map((lead, i) => <LeadCard key={i} lead={lead} />)
-          )}
-        </div>
-      </div>
-
-      {/* ── Export Buttons ─────────────────────────────────────────────── */}
-      <div className="px-5 pb-5 flex gap-2 border-t border-slate-700/60 pt-3">
-        <button
-          onClick={handleExportCSV}
-          disabled={leads.length === 0 || isExtracting}
-          className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Export CSV
-        </button>
-        <button
-          onClick={handleExportXML}
-          disabled={leads.length === 0 || isExtracting}
-          className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Export XML
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Lead Card Component ───────────────────────────────────────────────────────
-function LeadCard({ lead }: { lead: Lead }) {
-  const noWebsite = !lead.website
-
-  return (
-    <div
-      className={`rounded-lg border px-3 py-2.5 text-sm flex flex-col gap-1 transition ${
-        noWebsite
-          ? 'bg-emerald-900/20 border-emerald-600/40'
-          : 'bg-slate-800/60 border-slate-700/50'
-      }`}
-    >
-      <div className="font-semibold text-white leading-tight">{lead.name}</div>
-
-      {lead.phone && (
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-          <Phone className="h-3 w-3 shrink-0" />
-          {lead.phone}
-        </div>
-      )}
-
-      {lead.email && (
-        <div className="flex items-center gap-1.5 text-xs text-amber-300/90 truncate">
-          <Mail className="h-3 w-3 shrink-0 text-amber-400" />
-          <span className="truncate">{lead.email}</span>
-        </div>
-      )}
-
-      {lead.website ? (
-        <div className="flex items-center gap-1.5 text-xs text-blue-400 truncate">
-          <Globe className="h-3 w-3 shrink-0" />
-          <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-          <Globe className="h-3 w-3 shrink-0" />
-          No website — potential client!
-        </div>
-      )}
-
-      {lead.address && (
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate">
-          <MapPin className="h-3 w-3 shrink-0" />
-          <span className="truncate">{lead.address}</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default App
-</file>
-
 <file path="manifest.json">
 {
   "manifest_version": 3,
@@ -2571,6 +2693,145 @@ export default App
   "permissions": ["storage", "tabs", "downloads", "scripting"],
   "host_permissions": ["https://*/*", "http://*/*"]
 }
+</file>
+
+<file path="src/content/index.ts">
+import { scrapeGoogleMaps } from './mapsScraper';
+import { scrapeGenericPage } from './genericScraper';
+
+try {
+  let isExtracting = false;
+  console.log('[LeadScraper] Content script loaded on:', window.location.href);
+
+  // ── Main orchestrator ──────────────────────────────────────────────────────
+  async function startScrapeProcess() {
+    const isMaps =
+      window.location.hostname.includes('google.com') &&
+      window.location.pathname.includes('/maps');
+    if (isMaps) {
+      await scrapeGoogleMaps(() => isExtracting);
+    } else {
+      await scrapeGenericPage();
+    }
+  }
+
+  // ── Message listener ───────────────────────────────────────────────────────
+  chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
+    try {
+      if (req.action === 'PING') {
+        sendResponse({ alive: true, url: window.location.href });
+        return true;
+      }
+      if (req.action === 'START_SCRAPING') {
+        if (isExtracting) {
+          sendResponse({ status: 'already_running' });
+          return true;
+        }
+        isExtracting = true;
+        startScrapeProcess()
+          .catch((err) => {
+            console.error('[LeadScraper] Error:', err);
+            chrome.runtime.sendMessage(
+              { type: 'EXTRACTION_ERROR', message: String(err?.message || err) },
+              () => {
+                if (chrome.runtime.lastError) {
+                  /* ignore */
+                }
+              }
+            );
+          })
+          .finally(() => {
+            isExtracting = false;
+            chrome.runtime.sendMessage({ type: 'EXTRACTION_DONE' }, () => {
+              if (chrome.runtime.lastError) {
+                /* ignore */
+              }
+            });
+          });
+        sendResponse({ status: 'started' });
+        return true;
+      }
+      if (req.action === 'STOP_EXTRACTION') {
+        isExtracting = false;
+        sendResponse({ status: 'stopped' });
+        return true;
+      }
+    } catch (e) {
+      console.warn('[LeadScraper] Listener error:', e);
+    }
+  });
+} catch (globalErr) {
+  console.warn('[LeadScraper] Init error:', globalErr);
+}
+</file>
+
+<file path="src/App.tsx">
+import { useExtraction } from '@/hooks/useExtraction';
+import { Header } from '@/components/Header';
+import { SearchControls } from '@/components/SearchControls';
+import { LeadsList } from '@/components/LeadsList';
+import { ExportFooter } from '@/components/ExportFooter';
+
+function App() {
+  const {
+    status,
+    errorMsg,
+    query,
+    setQuery,
+    leads,
+    platform,
+    platformColor,
+    filterText,
+    setFilterText,
+    filterNoWebsiteOnly,
+    setFilterNoWebsiteOnly,
+    filteredLeads,
+    noWebsiteCount,
+    isExtracting,
+    handleStart,
+    handleStop,
+    handleClear,
+    handleExportCSV,
+    handleExportXML,
+  } = useExtraction();
+
+  return (
+    <div className="w-[420px] min-h-[580px] bg-[#0f172a] text-slate-100 font-sans flex flex-col">
+      <Header platform={platform} platformColor={platformColor} />
+
+      <SearchControls
+        query={query}
+        setQuery={setQuery}
+        isExtracting={isExtracting}
+        status={status}
+        errorMsg={errorMsg}
+        leadsCount={leads.length}
+        handleStart={handleStart}
+        handleStop={handleStop}
+      />
+
+      <LeadsList
+        leads={leads}
+        filteredLeads={filteredLeads}
+        noWebsiteCount={noWebsiteCount}
+        filterNoWebsiteOnly={filterNoWebsiteOnly}
+        setFilterNoWebsiteOnly={setFilterNoWebsiteOnly}
+        filterText={filterText}
+        setFilterText={setFilterText}
+        handleClear={handleClear}
+        isExtracting={isExtracting}
+      />
+
+      <ExportFooter
+        handleExportCSV={handleExportCSV}
+        handleExportXML={handleExportXML}
+        disabled={leads.length === 0 || isExtracting}
+      />
+    </div>
+  );
+}
+
+export default App;
 </file>
 
 </files>

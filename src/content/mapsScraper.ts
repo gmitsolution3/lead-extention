@@ -184,11 +184,19 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
       // Capture current h1 BEFORE clicking
       const prevH1 = getDetailPanelH1();
 
-      // Click the card
+      // Click the card with realistic mouse events (Maps virtualized cards require full pointer sequence)
+      const mouseOpts = { bubbles: true, cancelable: true, view: window };
+      anchor.dispatchEvent(new MouseEvent('mousedown', mouseOpts));
+      anchor.dispatchEvent(new MouseEvent('mouseup', mouseOpts));
       anchor.click();
 
+      if (cardContainer && cardContainer !== anchor) {
+        cardContainer.dispatchEvent(new MouseEvent('mousedown', mouseOpts));
+        cardContainer.dispatchEvent(new MouseEvent('mouseup', mouseOpts));
+      }
+
       // Wait until h1 changes (confirms detail panel updated with new place)
-      await waitForPanelUpdate(prevH1, 5000, checkActive);
+      const panelUpdated = await waitForPanelUpdate(prevH1, 3500, checkActive);
       if (!checkActive()) break;
 
       // Anti-bot delay after opening detail panel (1200ms–2500ms)
@@ -198,14 +206,27 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
       // ── Step 4: Extract detail panel data ──
       const detail = extractFromDetailPanel();
 
+      // Identify whether the panel is stale (failed to update or still shows prev item)
+      const isStalePanel = !panelUpdated || (
+        Boolean(prevH1) &&
+        Boolean(detail.name) &&
+        detail.name.trim().toLowerCase() === prevH1.trim().toLowerCase()
+      );
+
       // ── Step 5: Build final lead ──
+      const finalName = (!isStalePanel && detail.name) ? detail.name : cardName;
+      const finalPhone = (!isStalePanel && detail.phone) ? detail.phone : cardPhone;
+      const finalWebsite = (!isStalePanel && detail.website) ? detail.website : cardWebsite;
+      const finalAddress = !isStalePanel ? detail.address : '';
+      const finalEmail = !isStalePanel ? detail.email : '';
+
       const lead: Lead = {
         source: 'Google Maps',
-        name: cardName || detail.name || '',
-        phone: detail.phone || cardPhone || '',
-        email: detail.email || '',
-        website: detail.website || cardWebsite || '',
-        address: detail.address || '',
+        name: finalName,
+        phone: finalPhone,
+        email: finalEmail,
+        website: finalWebsite,
+        address: finalAddress,
       };
 
       if (lead.name) {

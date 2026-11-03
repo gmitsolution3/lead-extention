@@ -25,15 +25,18 @@ export async function waitFor(
 // Wait for h1 to change to a DIFFERENT value than prevText (means panel updated)
 export async function waitForPanelUpdate(
   prevH1Text: string,
-  timeout = 5000,
+  timeout = 3500,
   checkActive: () => boolean = () => true
-): Promise<void> {
+): Promise<boolean> {
   const end = Date.now() + timeout;
   while (Date.now() < end && checkActive()) {
     const h1 = getDetailPanelH1();
-    if (h1 && h1 !== prevH1Text) return;
+    if (h1 && h1.trim().toLowerCase() !== prevH1Text.trim().toLowerCase()) {
+      return true;
+    }
     await sleep(150);
   }
+  return false;
 }
 
 // Get the h1 from the detail panel only (not the search results title)
