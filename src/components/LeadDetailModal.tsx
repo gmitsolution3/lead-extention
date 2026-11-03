@@ -16,6 +16,22 @@ interface CopyFieldRowProps {
   isUrl?: boolean;
 }
 
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+    </svg>
+  );
+}
+
 function CopyFieldRow({ icon: Icon, label, value, isUrl }: CopyFieldRowProps) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -155,6 +171,9 @@ export function LeadDetailModal({ lead, isOpen, onClose }: LeadDetailModalProps)
             <CopyFieldRow icon={Phone} label="Phone" value={lead.phone} />
             <CopyFieldRow icon={Mail} label="Email" value={lead.email} />
             <CopyFieldRow icon={Globe} label="Website" value={lead.website} isUrl />
+            {lead.facebook && (
+              <CopyFieldRow icon={FacebookIcon} label="Facebook" value={lead.facebook} isUrl />
+            )}
             <CopyFieldRow icon={MapPin} label="Address" value={lead.address} />
           </div>
         </Dialog.Popup>

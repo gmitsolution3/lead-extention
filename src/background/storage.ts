@@ -47,13 +47,13 @@ export function extractPhoneDigits(phone: string): string {
   return (phone || '').replace(/\D/g, '');
 }
 
-export function isDuplicateLead(candidate: Lead, existingLeads: Lead[]): boolean {
+export function findDuplicateIndex(candidate: Lead, existingLeads: Lead[]): number {
   const normName = (candidate.name || '').trim().toLowerCase();
   const candDigits = extractPhoneDigits(candidate.phone || '');
   const normWeb = (candidate.website || '').trim().toLowerCase();
   const normAddr = (candidate.address || '').trim().toLowerCase();
 
-  return existingLeads.some((l) => {
+  return existingLeads.findIndex((l) => {
     // a) Phone match: digits length >= 7 and identical
     const exDigits = extractPhoneDigits(l.phone || '');
     if (candDigits.length >= 7 && exDigits.length >= 7 && candDigits === exDigits) {
@@ -86,6 +86,10 @@ export function isDuplicateLead(candidate: Lead, existingLeads: Lead[]): boolean
   });
 }
 
+export function isDuplicateLead(candidate: Lead, existingLeads: Lead[]): boolean {
+  return findDuplicateIndex(candidate, existingLeads) !== -1;
+}
+
 export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count: number }> {
   const task = async () => {
     if (!newLead || !newLead.name) {
@@ -94,7 +98,52 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
     }
 
     const leads = await getLeads();
-    if (isDuplicateLead(newLead, leads)) {
+    const dupIndex = findDuplicateIndex(newLead, leads);
+
+    if (dupIndex !== -1) {
+      const existing = leads[dupIndex];
+      let changed = false;
+      let websiteNewlyFilled = false;
+
+      // Fill ONLY empty fields of the stored lead from the new one; never overwrite non-empty values
+      if (!existing.phone && newLead.phone) {
+        existing.phone = newLead.phone;
+        changed = true;
+      }
+      if (!existing.email && newLead.email) {
+        existing.email = newLead.email;
+        changed = true;
+      }
+      if (!existing.website && newLead.website) {
+        existing.website = newLead.website;
+        changed = true;
+        websiteNewlyFilled = true;
+      }
+      if (!existing.address && newLead.address) {
+        existing.address = newLead.address;
+        changed = true;
+      }
+      if (!existing.facebook && newLead.facebook) {
+        existing.facebook = newLead.facebook;
+        changed = true;
+      }
+
+      if (changed) {
+        await saveLeads(leads);
+        chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads }, () => {
+          if (chrome.runtime.lastError) {
+            /* ignore popup closed cleanly */
+          }
+        });
+
+        // If a website was newly filled and email is empty, call enrichLeadEmail(...)
+        if (websiteNewlyFilled && !existing.email) {
+          enrichLeadEmail(existing).catch(() => {});
+        }
+
+        return { status: 'merged', count: leads.length };
+      }
+
       return { status: 'duplicate', count: leads.length };
     }
 
@@ -111,4 +160,3 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
 
   return enqueueTask(task);
 }
-

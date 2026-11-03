@@ -5,6 +5,7 @@ export interface Lead {
   email: string;
   website: string;
   address?: string;
+  facebook?: string;
 }
 
 export interface ExtractionStatus {
@@ -22,4 +23,3 @@ export const DEFAULT_EXTRACTION_STATUS: ExtractionStatus = {
 };
 
 export type Status = 'idle' | 'extracting' | 'done' | 'error';
-

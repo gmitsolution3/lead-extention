@@ -1,4 +1,15 @@
-import { isInternalGoogleDomain } from '@/lib/url';
+import {
+  isInternalGoogleDomain,
+  unwrapGoogleRedirect,
+  isSocialSharingOrExcluded,
+  extractFacebook,
+} from '@/lib/url';
+
+export {
+  unwrapGoogleRedirect,
+  isSocialSharingOrExcluded,
+  extractFacebook,
+};
 
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -7,6 +18,63 @@ export const jitter = (min: number, max: number) =>
 
 export const PHONE_REGEX = /(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/g;
 export const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+export const normalizeName = (s: string) =>
+  (s || '').toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, '');
+
+export function namesMatch(a: string, b: string): boolean {
+  const x = normalizeName(a), y = normalizeName(b);
+  if (!x || !y) return false; // empty never matches
+  if (x === y) return true;
+  return Math.min(x.length, y.length) >= 4 && (x.includes(y) || y.includes(x));
+}
+
+export const isVisible = (el: Element): boolean =>
+  (el as any).checkVisibility?.({ checkVisibilityCSS: true }) ?? el.getClientRects().length > 0;
+
+export const getFtid = (href: string): string =>
+  href.match(/!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i)?.[1]?.toLowerCase() || '';
+
+export const urlMatchesAnchor = (anchorHref: string): boolean => {
+  const id = getFtid(anchorHref);
+  return id ? location.href.toLowerCase().includes(id) : true;
+};
+
+// Detail pane = visible [role=main] WITHOUT a [role=feed] inside, whose aria-label or h1 matches the clicked place.
+export function findDetailPane(expectedName: string): HTMLElement | null {
+  const mains = Array.from(document.querySelectorAll<HTMLElement>('[role="main"]'))
+    .filter((m) => isVisible(m) && !m.querySelector('[role="feed"]'));
+  return (
+    mains.find((m) => namesMatch(m.getAttribute('aria-label') || '', expectedName)) ||
+    mains.find((m) => Array.from(m.querySelectorAll('h1')).some((h) => namesMatch(h.textContent || '', expectedName))) ||
+    null
+  );
+}
+
+export async function waitForDetailReady(
+  expectedName: string,
+  opts: { anchorHref: string; timeout?: number; settleMs?: number; checkActive?: () => boolean }
+) {
+  const { anchorHref, timeout = 9000, settleMs = 700, checkActive = () => true } = opts;
+  const start = Date.now();
+  let lastSig = '', stableSince = 0;
+  let pane: HTMLElement | null = null, rows: string[] = [], urlMatched = false;
+  while (Date.now() - start < timeout && checkActive()) {
+    pane = findDetailPane(expectedName);
+    urlMatched = urlMatchesAnchor(anchorHref);
+    if (pane && urlMatched) {
+      const els = Array.from(pane.querySelectorAll<HTMLElement>('[data-item-id]'));
+      rows = els.map((e) => e.getAttribute('data-item-id') || '');
+      const sig = els.map((e) => `${e.getAttribute('data-item-id')}|${e.getAttribute('href') || ''}|${e.getAttribute('aria-label') || ''}`).join('~');
+      if (els.length > 0) {
+        if (sig !== lastSig) { lastSig = sig; stableSince = Date.now(); }
+        else if (Date.now() - stableSince >= settleMs) break; // rows present and unchanged => fully rendered
+      }
+    }
+    await sleep(200);
+  }
+  return { pane, titleMatched: !!pane, urlMatched, rows, waitedMs: Date.now() - start };
+}
 
 export async function waitFor(
   selector: string,
@@ -20,6 +88,23 @@ export async function waitFor(
     await sleep(300);
   }
   return null;
+}
+
+// Get the h1 from the detail panel only (not the search results title)
+export function getDetailPanelH1(expectedName?: string): string {
+  if (expectedName) {
+    const pane = findDetailPane(expectedName);
+    if (pane) {
+      return pane.getAttribute('aria-label') || pane.querySelector('h1')?.textContent?.trim() || '';
+    }
+  }
+  const mains = Array.from(document.querySelectorAll<HTMLElement>('[role="main"]'))
+    .filter((m) => isVisible(m) && !m.querySelector('[role="feed"]'));
+  if (mains.length > 0) {
+    return mains[0].getAttribute('aria-label') || mains[0].querySelector('h1')?.textContent?.trim() || '';
+  }
+  const h1 = document.querySelector('h1.DUwDvf, h1.fontTitleLarge');
+  return h1?.textContent?.trim() || '';
 }
 
 // Wait for h1 to change to a DIFFERENT value than prevText (means panel updated)
@@ -39,23 +124,6 @@ export async function waitForPanelUpdate(
   return false;
 }
 
-// Get the h1 from the detail panel only (not the search results title)
-export function getDetailPanelH1(): string {
-  const panel =
-    document.querySelector('div[role="main"] div.m6QEdf') ||
-    document.querySelector('div.bJ2h1d') ||
-    document.querySelector('div[data-section-id="ap"]') ||
-    document.querySelector('div[jsaction*="pane"]');
-
-  if (panel) {
-    const h1 = panel.querySelector('h1');
-    if (h1?.textContent?.trim()) return h1.textContent.trim();
-  }
-
-  const h1 = document.querySelector('h1.DUwDvf, h1.fontTitleLarge');
-  return h1?.textContent?.trim() || '';
-}
-
 // ── Clean Name Parser (replaces broken double split) ──────────────────────
 export function parseCardName(rawText: string): string {
   if (!rawText) return '';
@@ -73,8 +141,31 @@ export function parseCardName(rawText: string): string {
   return cleaned || firstChunk;
 }
 
+// ── Clean address text helper ─────────────────────────────────────────────
+export function cleanAddressText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^address:?\s*/i, '')
+    .replace(/^ঠিকানা:?\s*/i, '')
+    .trim();
+}
+
+// ── Extract address from element (with priority for data-item-id="address") ───
+export function extractAddressFromElement(container: HTMLElement): string {
+  if (!container) return '';
+  const addrEl = container.querySelector(
+    '[data-item-id="address"], button[aria-label*="address" i], button[aria-label*="ঠিকানা" i]'
+  );
+  if (addrEl) {
+    const raw = addrEl.getAttribute('aria-label') || addrEl.textContent || '';
+    return cleanAddressText(raw);
+  }
+  return '';
+}
+
 // ── Extract phone from element (with clean phone:tel handling) ─────────────
 export function extractPhoneFromElement(container: HTMLElement): string {
+  if (!container) return '';
   const phoneEl =
     container.querySelector('[data-item-id^="phone:tel:"]') ||
     container.querySelector('button[data-item-id^="phone:tel:"]') ||
@@ -106,21 +197,32 @@ export function extractPhoneFromElement(container: HTMLElement): string {
   return '';
 }
 
-// ── Extract website from element (ignoring internal Google domains) ────────
+// ── Extract website from element (ignoring internal Google domains & social sharing) ────────
 export function extractWebsiteFromElement(container: HTMLElement): string {
-  const webEl = container.querySelector<HTMLAnchorElement>(
-    'a[data-item-id="authority"], a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
-  );
-  if (webEl?.href && !isInternalGoogleDomain(webEl.href)) {
-    return webEl.href;
-  }
+  if (!container) return '';
 
-  const allAnchors = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[href^='http']"));
-  for (const a of allAnchors) {
-    if (a.href && !isInternalGoogleDomain(a.href)) {
-      return a.href;
+  // Tier 1: Authority attribute
+  const authEl = container.querySelector<HTMLAnchorElement>('a[data-item-id="authority"]');
+  const authHref = authEl?.href || authEl?.getAttribute('href') || '';
+  if (authHref) {
+    const unwrapped = unwrapGoogleRedirect(authHref);
+    if (unwrapped && !isInternalGoogleDomain(unwrapped) && !isSocialSharingOrExcluded(unwrapped)) {
+      return unwrapped;
     }
   }
+
+  // Tier 2: Label-based selectors
+  const labelEl = container.querySelector<HTMLAnchorElement>(
+    'a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
+  );
+  const labelHref = labelEl?.href || labelEl?.getAttribute('href') || '';
+  if (labelHref) {
+    const unwrapped = unwrapGoogleRedirect(labelHref);
+    if (unwrapped && !isInternalGoogleDomain(unwrapped) && !isSocialSharingOrExcluded(unwrapped)) {
+      return unwrapped;
+    }
+  }
+
   return '';
 }
 
@@ -130,8 +232,7 @@ export function saveLead(lead: object) {
     if (chrome.runtime.lastError) {
       console.warn('[LeadScraper] SAVE_LEAD error:', chrome.runtime.lastError.message);
     } else {
-      console.log('[LeadScraper] Saved. Total:', res?.count);
+      console.log('[LeadScraper] Saved. Total:', res?.count, 'Status:', res?.status);
     }
   });
 }
-
