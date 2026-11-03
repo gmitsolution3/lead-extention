@@ -589,11 +589,11 @@ interface ExportFooterProps {
 
 export function ExportFooter({ handleExportCSV, handleExportXML, disabled }: ExportFooterProps) {
   return (
-    <div className="px-5 pb-5 flex gap-2 border-t border-slate-700/60 pt-3">
+    <div className="px-5 pb-5 pt-3.5 flex gap-2.5 border-t border-zinc-800/60 bg-[#141416]/40">
       <button
         onClick={handleExportCSV}
         disabled={disabled}
-        className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
+        className="flex-1 h-10 rounded-xl bg-[#1c1c1e] hover:bg-[#242428] border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#1c1c1e] disabled:hover:text-zinc-300 active:scale-[0.99] transition flex items-center justify-center gap-1.5 shadow-xs"
       >
         <Download className="h-3.5 w-3.5" />
         Export CSV
@@ -601,7 +601,7 @@ export function ExportFooter({ handleExportCSV, handleExportXML, disabled }: Exp
       <button
         onClick={handleExportXML}
         disabled={disabled}
-        className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center justify-center gap-1.5"
+        className="flex-1 h-10 rounded-xl bg-[#1c1c1e] hover:bg-[#242428] border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#1c1c1e] disabled:hover:text-zinc-300 active:scale-[0.99] transition flex items-center justify-center gap-1.5 shadow-xs"
       >
         <Download className="h-3.5 w-3.5" />
         Export XML
@@ -612,29 +612,56 @@ export function ExportFooter({ handleExportCSV, handleExportXML, disabled }: Exp
 </file>
 
 <file path="src/components/Header.tsx">
+import { Target } from 'lucide-react';
+
 interface HeaderProps {
   platform: string;
   platformColor: string;
 }
 
 export function Header({ platform, platformColor }: HeaderProps) {
+  const isGoogleMaps = platform === 'Google Maps';
+
   return (
-    <div className="px-5 pt-5 pb-4 border-b border-slate-700/60">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-bold tracking-tight text-white">Lead Scraper</h1>
-        <span
-          className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-          style={{
-            background: platformColor + '22',
-            color: platformColor,
-            border: `1px solid ${platformColor}55`,
-          }}
-        >
-          {platform}
-        </span>
+    <div className="px-5 pt-4 pb-3.5 border-b border-zinc-800/60 bg-[#141416]/40">
+      <div className="flex items-center justify-between">
+        {/* Left: Crisp branding with updated clean icon badge and logo */}
+        <div className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded-lg bg-[#c6f432]/10 border border-[#c6f432]/25 flex items-center justify-center text-[#c6f432] shadow-[0_0_12px_rgba(198,244,50,0.12)]">
+            <Target className="h-4 w-4" />
+          </div>
+          <h1 className="text-base font-bold tracking-tight text-zinc-100">Lead Scraper</h1>
+        </div>
+
+        {/* Right: Modern rounded pill badge for platform status with glowing subtle dot */}
+        {isGoogleMaps ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#c6f432]/10 text-[#c6f432] border border-[#c6f432]/25">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c6f432] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#c6f432]"></span>
+            </span>
+            {platform}
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+            style={{
+              background: platformColor + '18',
+              color: platformColor,
+              border: `1px solid ${platformColor}40`,
+            }}
+          >
+            <span
+              className="inline-flex rounded-full h-1.5 w-1.5"
+              style={{ backgroundColor: platformColor }}
+            />
+            {platform}
+          </span>
+        )}
       </div>
-      <p className="text-xs text-slate-400">
-        {platform === 'Google Maps'
+
+      <p className="text-xs text-zinc-400 mt-2 font-normal leading-relaxed">
+        {isGoogleMaps
           ? 'Scrapes all results from the active Google Maps search'
           : 'Open Google Maps in this tab to start scraping'}
       </p>
@@ -656,46 +683,52 @@ export function LeadCard({ lead }: LeadCardProps) {
 
   return (
     <div
-      className={`rounded-lg border px-3 py-2.5 text-sm flex flex-col gap-1 transition ${
+      className={`rounded-xl border p-3.5 text-sm flex flex-col gap-2 transition-all duration-150 ${
         noWebsite
-          ? 'bg-emerald-900/20 border-emerald-600/40'
-          : 'bg-slate-800/60 border-slate-700/50'
+          ? 'bg-[#1c1c1e] hover:bg-[#202023] border-[#c6f432]/30 shadow-[0_0_16px_rgba(198,244,50,0.03)]'
+          : 'bg-[#1c1c1e] hover:bg-[#202023] border-zinc-800/60'
       }`}
     >
-      <div className="font-semibold text-white leading-tight">{lead.name}</div>
+      <div className="font-semibold text-zinc-100 text-sm leading-tight">
+        {lead.name}
+      </div>
 
-      {lead.phone && (
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-          <Phone className="h-3 w-3 shrink-0" />
-          {lead.phone}
-        </div>
-      )}
+      <div className="flex flex-col gap-1.5 pt-0.5">
+        {lead.phone && (
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <Phone className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+            <span>{lead.phone}</span>
+          </div>
+        )}
 
-      {lead.email && (
-        <div className="flex items-center gap-1.5 text-xs text-amber-300/90 truncate">
-          <Mail className="h-3 w-3 shrink-0 text-amber-400" />
-          <span className="truncate">{lead.email}</span>
-        </div>
-      )}
+        {lead.email && (
+          <div className="flex items-center gap-2 text-xs text-amber-300/90 truncate bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+            <Mail className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+            <span className="truncate font-medium">{lead.email}</span>
+          </div>
+        )}
 
-      {lead.website ? (
-        <div className="flex items-center gap-1.5 text-xs text-blue-400 truncate">
-          <Globe className="h-3 w-3 shrink-0" />
-          <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-          <Globe className="h-3 w-3 shrink-0" />
-          No website — potential client!
-        </div>
-      )}
+        {lead.website ? (
+          <div className="flex items-center gap-2 text-xs text-zinc-300 truncate">
+            <Globe className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+            <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs pt-0.5">
+            <Globe className="h-3.5 w-3.5 shrink-0 text-[#c6f432]/70" />
+            <span className="text-[#c6f432] bg-[#c6f432]/10 border border-[#c6f432]/20 px-2 py-0.5 rounded-md text-[11px] font-medium">
+              No website — potential client
+            </span>
+          </div>
+        )}
 
-      {lead.address && (
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate">
-          <MapPin className="h-3 w-3 shrink-0" />
-          <span className="truncate">{lead.address}</span>
-        </div>
-      )}
+        {lead.address && (
+          <div className="flex items-center gap-2 text-xs text-zinc-400 truncate">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+            <span className="truncate">{lead.address}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -731,20 +764,20 @@ export function LeadsList({
 }: LeadsListProps) {
   return (
     <div className="flex-1 flex flex-col px-5 pt-3 pb-3 overflow-hidden">
-      {/* Results Bar */}
+      {/* Results Header Bar */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+          <span className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
             Results ({filteredLeads.length}
             {filteredLeads.length !== leads.length ? ` / ${leads.length}` : ''})
           </span>
           {noWebsiteCount > 0 && (
             <button
               onClick={() => setFilterNoWebsiteOnly(!filterNoWebsiteOnly)}
-              className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+              className={`text-[11px] px-2.5 py-0.5 rounded-lg transition-all duration-150 ${
                 filterNoWebsiteOnly
-                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-300'
+                  ? 'bg-[#c6f432] text-black font-semibold shadow-sm'
+                  : 'bg-[#1a1a1c] border border-zinc-800 text-zinc-400 hover:text-zinc-200'
               }`}
               title="Filter leads without websites"
             >
@@ -755,28 +788,28 @@ export function LeadsList({
         <button
           onClick={handleClear}
           disabled={leads.length === 0 || isExtracting}
-          className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed transition duration-150"
         >
           <Trash2 className="h-3.5 w-3.5" />
           Clear
         </button>
       </div>
 
-      {/* Filter Input */}
+      {/* Compact Matte Filter Input */}
       {leads.length > 0 && (
-        <div className="relative mb-2">
-          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+        <div className="relative mb-2.5">
+          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
           <input
             type="text"
             placeholder="Filter leads by name, phone, or 'no website'..."
-            className="w-full h-8 rounded-md bg-slate-800/80 border border-slate-700/70 pl-8 pr-7 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+            className="w-full h-8 rounded-lg bg-[#18181a] border border-zinc-800/80 pl-8 pr-7 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-[#c6f432]/60 focus:ring-1 focus:ring-[#c6f432]/40 transition duration-150"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
           />
           {filterText && (
             <button
               onClick={() => setFilterText('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-100 transition"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -784,16 +817,19 @@ export function LeadsList({
         </div>
       )}
 
-      {/* Leads Scroll Area */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-0.5 min-h-0 max-h-[220px]">
+      {/* Styled Leads Scroll Area */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 pr-0.5 min-h-0 max-h-[220px]">
         {leads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-500 text-sm gap-2 py-8">
-            <Search className="h-8 w-8 opacity-30" />
-            <span>No leads yet. Start an extraction above.</span>
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-sm gap-2.5 py-8">
+            <div className="h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <Search className="h-5 w-5 text-zinc-600" />
+            </div>
+            <span className="text-xs text-zinc-500">No leads yet. Start an extraction above.</span>
           </div>
         ) : filteredLeads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs gap-1 py-8">
-            <span>No leads match current filter.</span>
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-xs gap-1.5 py-8">
+            <span className="text-zinc-400 font-medium">No matches found</span>
+            <span className="text-[11px] text-zinc-600">Try adjusting your filter search query.</span>
           </div>
         ) : (
           filteredLeads.map((lead, i) => <LeadCard key={i} lead={lead} />)
@@ -831,33 +867,34 @@ export function SearchControls({
 }: SearchControlsProps) {
   return (
     <div className="px-5 pt-4 flex flex-col gap-3">
+      {/* Matte dark search field */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
         <input
           type="text"
           placeholder="e.g. English medium school Dhaka"
-          className="w-full h-10 rounded-lg bg-slate-800 border border-slate-700 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 transition"
+          className="w-full h-11 rounded-xl bg-[#1a1a1c] border border-zinc-800 pl-10 pr-3.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-[#c6f432] focus:ring-1 focus:ring-[#c6f432]/50 disabled:opacity-40 transition-all duration-150"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !isExtracting && handleStart()}
+          onKeyDown={(e) => e.key === 'Enter' && !isExtracting && query.trim() && handleStart()}
           disabled={isExtracting}
         />
       </div>
 
-      {/* Action button */}
+      {/* Action buttons */}
       {!isExtracting ? (
         <button
           onClick={handleStart}
           disabled={!query.trim()}
-          className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+          className="w-full h-11 rounded-xl bg-[#c6f432] text-black font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#b8e82b] active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[#c6f432] transition-all duration-150 shadow-md shadow-[#c6f432]/10"
         >
-          <Search className="h-4 w-4" />
+          <Search className="h-4 w-4 stroke-[2.5]" />
           Start Extraction
         </button>
       ) : (
         <button
           onClick={handleStop}
-          className="w-full h-10 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+          className="w-full h-11 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-rose-500/25 active:scale-[0.99] transition duration-150"
         >
           <Loader2 className="h-4 w-4 animate-spin" />
           Stop Extraction
@@ -866,161 +903,27 @@ export function SearchControls({
 
       {/* Status banners */}
       {status === 'done' && (
-        <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-400/10 border border-emerald-500/30 rounded-lg px-3 py-2">
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-          Extraction complete — {leadsCount} lead{leadsCount !== 1 ? 's' : ''} found
+        <div className="flex items-center gap-2.5 text-xs text-emerald-300 bg-[#1c1c1e] border border-emerald-500/30 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          <span>Extraction complete — {leadsCount} lead{leadsCount !== 1 ? 's' : ''} found</span>
         </div>
       )}
+
       {status === 'error' && (
-        <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 border border-red-500/30 rounded-lg px-3 py-2">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          {errorMsg}
+        <div className="flex items-center gap-2.5 text-xs text-rose-300 bg-rose-950/20 border border-rose-800/40 rounded-xl px-3.5 py-2.5 shadow-xs">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+          <span className="truncate">{errorMsg || 'An error occurred during extraction.'}</span>
         </div>
       )}
+
       {isExtracting && (
-        <div className="flex items-center gap-2 text-xs text-blue-400 bg-blue-400/10 border border-blue-500/30 rounded-lg px-3 py-2">
-          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-          Navigating & Extracting… {leadsCount} lead{leadsCount !== 1 ? 's' : ''} collected
+        <div className="flex items-center gap-2.5 text-xs text-[#c6f432] bg-[#1c1c1e] border border-[#c6f432]/25 rounded-xl px-3.5 py-2.5 font-medium shadow-xs">
+          <Loader2 className="h-4 w-4 animate-spin shrink-0 text-[#c6f432]" />
+          <span>Navigating & Extracting… {leadsCount} lead{leadsCount !== 1 ? 's' : ''} collected</span>
         </div>
       )}
     </div>
   );
-}
-</file>
-
-<file path="src/content/domUtils.ts">
-import { isInternalGoogleDomain } from '@/lib/url';
-
-export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-export const jitter = (min: number, max: number) =>
-  sleep(Math.floor(Math.random() * (max - min + 1) + min));
-
-export const PHONE_REGEX = /(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/g;
-export const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-
-export async function waitFor(
-  selector: string,
-  timeout = 12000,
-  checkActive: () => boolean = () => true
-): Promise<Element | null> {
-  const end = Date.now() + timeout;
-  while (Date.now() < end && checkActive()) {
-    const el = document.querySelector(selector);
-    if (el) return el;
-    await sleep(300);
-  }
-  return null;
-}
-
-// Wait for h1 to change to a DIFFERENT value than prevText (means panel updated)
-export async function waitForPanelUpdate(
-  prevH1Text: string,
-  timeout = 5000,
-  checkActive: () => boolean = () => true
-): Promise<void> {
-  const end = Date.now() + timeout;
-  while (Date.now() < end && checkActive()) {
-    const h1 = getDetailPanelH1();
-    if (h1 && h1 !== prevH1Text) return;
-    await sleep(150);
-  }
-}
-
-// Get the h1 from the detail panel only (not the search results title)
-export function getDetailPanelH1(): string {
-  const panel =
-    document.querySelector('div[role="main"] div.m6QEdf') ||
-    document.querySelector('div.bJ2h1d') ||
-    document.querySelector('div[data-section-id="ap"]') ||
-    document.querySelector('div[jsaction*="pane"]');
-
-  if (panel) {
-    const h1 = panel.querySelector('h1');
-    if (h1?.textContent?.trim()) return h1.textContent.trim();
-  }
-
-  const h1 = document.querySelector('h1.DUwDvf, h1.fontTitleLarge');
-  return h1?.textContent?.trim() || '';
-}
-
-// ── Clean Name Parser (replaces broken double split) ──────────────────────
-export function parseCardName(rawText: string): string {
-  if (!rawText) return '';
-  // Google Maps separates card title from rating/category with middle dot, bullet, or pipe
-  const firstChunk = rawText.split(/[·•|\n]/)[0].trim();
-
-  // Strip ratings, review counts, stars if present in the chunk
-  const cleaned = firstChunk
-    .replace(/★\s*[\d.]+/g, '')
-    .replace(/\b\d\.\d\s*(\([\d,]+\))?/g, '')
-    .replace(/\([\d,]+\)/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  return cleaned || firstChunk;
-}
-
-// ── Extract phone from element (with clean phone:tel handling) ─────────────
-export function extractPhoneFromElement(container: HTMLElement): string {
-  const phoneEl =
-    container.querySelector('[data-item-id^="phone:tel:"]') ||
-    container.querySelector('button[data-item-id^="phone:tel:"]') ||
-    container.querySelector('button[data-tooltip*="phone" i]') ||
-    container.querySelector('button[aria-label*="phone" i], button[aria-label*="Phone" i]') ||
-    container.querySelector('button[aria-label*="ফোন" i]') ||
-    container.querySelector('[data-item-id*="phone"]');
-
-  if (phoneEl) {
-    const itemId = phoneEl.getAttribute('data-item-id') || '';
-    if (itemId.startsWith('phone:tel:')) {
-      return itemId.replace('phone:tel:', '').trim();
-    }
-    const label = phoneEl.getAttribute('aria-label') || phoneEl.textContent || '';
-    const m = label.match(/(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/);
-    if (m && m[0].replace(/\D/g, '').length >= 7) {
-      return m[0].trim();
-    }
-  }
-
-  const text = container.textContent || '';
-  const matches = text.match(PHONE_REGEX);
-  if (matches) {
-    const valid = matches.find(
-      (p) => p.replace(/\D/g, '').length >= 7 && p.replace(/\D/g, '').length <= 15
-    );
-    if (valid) return valid.trim();
-  }
-  return '';
-}
-
-// ── Extract website from element (ignoring internal Google domains) ────────
-export function extractWebsiteFromElement(container: HTMLElement): string {
-  const webEl = container.querySelector<HTMLAnchorElement>(
-    'a[data-item-id="authority"], a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
-  );
-  if (webEl?.href && !isInternalGoogleDomain(webEl.href)) {
-    return webEl.href;
-  }
-
-  const allAnchors = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[href^='http']"));
-  for (const a of allAnchors) {
-    if (a.href && !isInternalGoogleDomain(a.href)) {
-      return a.href;
-    }
-  }
-  return '';
-}
-
-// Save lead to background queue with proper error handling
-export function saveLead(lead: object) {
-  chrome.runtime.sendMessage({ type: 'SAVE_LEAD', payload: lead }, (res) => {
-    if (chrome.runtime.lastError) {
-      console.warn('[LeadScraper] SAVE_LEAD error:', chrome.runtime.lastError.message);
-    } else {
-      console.log('[LeadScraper] Saved. Total:', res?.count);
-    }
-  });
 }
 </file>
 
@@ -1050,230 +953,6 @@ export async function scrapeGenericPage(): Promise<void> {
     address: '',
   };
   if (lead.name && (lead.phone || lead.email)) saveLead(lead);
-}
-</file>
-
-<file path="src/content/mapsScraper.ts">
-import type { Lead } from '@/types/lead';
-import {
-  waitFor,
-  waitForPanelUpdate,
-  getDetailPanelH1,
-  parseCardName,
-  extractPhoneFromElement,
-  extractWebsiteFromElement,
-  saveLead,
-  jitter,
-  EMAIL_REGEX,
-} from './domUtils';
-
-// Extract place ID from Google Maps URL for reliable tracking
-export function getPlaceId(href: string): string {
-  try {
-    const match = href.match(/\/maps\/place\/([^/]+)/);
-    if (match) return decodeURIComponent(match[1]);
-  } catch {
-    /* ignore URI decode errors */
-  }
-  return href;
-}
-
-// ── Extract full lead from detail panel ───────────────────────────────────
-export function extractFromDetailPanel(): Lead {
-  const lead: Lead = { source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
-
-  const detailPane =
-    document.querySelector('div[role="main"] div.m6QEdf') ||
-    document.querySelector('div.bJ2h1d') ||
-    document.querySelector('div[role="main"]') ||
-    document;
-
-  // Name
-  const titleEl = detailPane.querySelector('h1.DUwDvf, h1.fontTitleLarge, h1');
-  lead.name = titleEl?.textContent?.trim() || '';
-
-  // Phone — clean extraction from data-item-id="phone:tel:"
-  lead.phone = extractPhoneFromElement(detailPane as HTMLElement);
-
-  // Website — ignores internal Google domains
-  lead.website = extractWebsiteFromElement(detailPane as HTMLElement);
-
-  // Address
-  const addrEl = detailPane.querySelector(
-    'button[data-item-id="address"], button[aria-label*="address" i], button[aria-label*="ঠিকানা" i]'
-  );
-  if (addrEl) {
-    const raw =
-      addrEl.getAttribute('aria-label')?.replace(/^address:?\s*/i, '').replace(/^ঠিকানা:?\s*/i, '').trim() ||
-      addrEl.textContent?.trim() ||
-      '';
-    lead.address = raw;
-  }
-
-  // Email on Maps panel (if listed)
-  const paneText = detailPane.textContent || '';
-  const emailMatches = paneText.match(EMAIL_REGEX);
-  if (emailMatches) {
-    const validEmail = emailMatches.find(
-      (e) => !e.endsWith('.png') && !e.endsWith('.jpg') && !e.endsWith('.js') && !e.endsWith('.webp')
-    );
-    if (validEmail) lead.email = validEmail;
-  }
-
-  return lead;
-}
-
-// ── Google Maps Scraper ────────────────────────────────────────────────────
-export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void> {
-  console.log('[LeadScraper] Starting Google Maps extraction...');
-
-  // Wait for results feed
-  let feed: Element | null = await waitFor('div[role="feed"]', 12000, checkActive);
-  if (!feed) {
-    feed =
-      document.querySelector('div[aria-label*="Results" i]') ||
-      document.querySelector('div[aria-label*="ফলাফল" i]') ||
-      document.querySelector('div.m6QEdf[aria-label]') ||
-      document.querySelector('div.m6QEdf');
-  }
-
-  if (!feed) {
-    // Single place view fallback
-    const singleLead = extractFromDetailPanel();
-    if (singleLead?.name) {
-      saveLead(singleLead);
-      return;
-    }
-    chrome.runtime.sendMessage(
-      {
-        type: 'EXTRACTION_ERROR',
-        message: 'Google Maps search results not found. Please open a search page first.',
-      },
-      () => {
-        if (chrome.runtime.lastError) {
-          /* ignore */
-        }
-      }
-    );
-    return;
-  }
-
-  await jitter(1000, 1500);
-
-  // Track processed places by their unique place-ID in href
-  const processedIds = new Set<string>();
-  let stuckCount = 0;
-  let lastScrollTop = -1;
-
-  while (checkActive()) {
-    // Collect unprocessed result cards
-    const allAnchors = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>('a[href*="/maps/place/"]')
-    );
-
-    // Deduplicate by extracting the place CID/ID from the URL
-    const newAnchors = allAnchors.filter((a) => {
-      const id = getPlaceId(a.href);
-      return id && !processedIds.has(id);
-    });
-
-    if (!checkActive()) break;
-
-    if (newAnchors.length === 0) {
-      // Humanized dynamic scroll increment (400px–750px)
-      const currentScroll = feed.scrollTop;
-      const scrollDelta = Math.floor(Math.random() * (750 - 400 + 1)) + 400;
-      feed.scrollTop += scrollDelta;
-      await jitter(1500, 2200);
-
-      if (!checkActive()) break;
-
-      if (Math.abs(feed.scrollTop - currentScroll) < 10 || feed.scrollTop === lastScrollTop) {
-        stuckCount++;
-        const endText = feed.textContent || '';
-        if (
-          endText.includes("You've reached the end") ||
-          endText.includes('তালিকায় আর কোনো স্থান নেই') ||
-          stuckCount >= 5
-        ) {
-          console.log('[LeadScraper] Reached end of list.');
-          break;
-        }
-      } else {
-        stuckCount = 0;
-      }
-      lastScrollTop = feed.scrollTop;
-      continue;
-    }
-
-    stuckCount = 0;
-
-    for (const anchor of newAnchors) {
-      if (!checkActive()) break;
-
-      const placeId = getPlaceId(anchor.href);
-      if (!placeId || processedIds.has(placeId)) continue;
-      processedIds.add(placeId);
-
-      // ── Step 1: Resilient Name Parsing (clean parser, no broken double-split) ──
-      const rawLabel = anchor.getAttribute('aria-label') || '';
-      const cardName = parseCardName(rawLabel) || parseCardName(anchor.textContent || '');
-
-      // ── Step 2: Get card-level data without clicking ──
-      const cardContainer =
-        anchor.closest('div.Nv251d, div[jsaction*="mouseover"], div[role="article"]') ||
-        anchor.parentElement?.parentElement ||
-        anchor.parentElement;
-
-      const cardPhone = cardContainer ? extractPhoneFromElement(cardContainer as HTMLElement) : '';
-      const cardWebsite = cardContainer ? extractWebsiteFromElement(cardContainer as HTMLElement) : '';
-
-      // ── Step 3: Scroll card into view ──
-      try {
-        anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } catch {
-        /* ignore scroll errors */
-      }
-      await jitter(300, 500);
-      if (!checkActive()) break;
-
-      // Capture current h1 BEFORE clicking
-      const prevH1 = getDetailPanelH1();
-
-      // Click the card
-      anchor.click();
-
-      // Wait until h1 changes (confirms detail panel updated with new place)
-      await waitForPanelUpdate(prevH1, 5000, checkActive);
-      if (!checkActive()) break;
-
-      // Anti-bot delay after opening detail panel (1200ms–2500ms)
-      await jitter(1200, 2500);
-      if (!checkActive()) break;
-
-      // ── Step 4: Extract detail panel data ──
-      const detail = extractFromDetailPanel();
-
-      // ── Step 5: Build final lead ──
-      const lead: Lead = {
-        source: 'Google Maps',
-        name: cardName || detail.name || '',
-        phone: detail.phone || cardPhone || '',
-        email: detail.email || '',
-        website: detail.website || cardWebsite || '',
-        address: detail.address || '',
-      };
-
-      if (lead.name) {
-        console.log('[LeadScraper] Lead:', lead.name, '| phone:', lead.phone, '| web:', lead.website);
-        saveLead(lead);
-      }
-
-      await jitter(200, 400);
-    }
-  }
-
-  console.log('[LeadScraper] Extraction finished. Total processed places:', processedIds.size);
 }
 </file>
 
@@ -2176,6 +1855,390 @@ function Button({
 export { Button, buttonVariants }
 </file>
 
+<file path="src/content/domUtils.ts">
+import { isInternalGoogleDomain } from '@/lib/url';
+
+export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+export const jitter = (min: number, max: number) =>
+  sleep(Math.floor(Math.random() * (max - min + 1) + min));
+
+export const PHONE_REGEX = /(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/g;
+export const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+export async function waitFor(
+  selector: string,
+  timeout = 12000,
+  checkActive: () => boolean = () => true
+): Promise<Element | null> {
+  const end = Date.now() + timeout;
+  while (Date.now() < end && checkActive()) {
+    const el = document.querySelector(selector);
+    if (el) return el;
+    await sleep(300);
+  }
+  return null;
+}
+
+// Wait for h1 to change to a DIFFERENT value than prevText (means panel updated)
+export async function waitForPanelUpdate(
+  prevH1Text: string,
+  timeout = 3500,
+  checkActive: () => boolean = () => true
+): Promise<boolean> {
+  const end = Date.now() + timeout;
+  while (Date.now() < end && checkActive()) {
+    const h1 = getDetailPanelH1();
+    if (h1 && h1.trim().toLowerCase() !== prevH1Text.trim().toLowerCase()) {
+      return true;
+    }
+    await sleep(150);
+  }
+  return false;
+}
+
+// Get the h1 from the detail panel only (not the search results title)
+export function getDetailPanelH1(): string {
+  const panel =
+    document.querySelector('div[role="main"] div.m6QEdf') ||
+    document.querySelector('div.bJ2h1d') ||
+    document.querySelector('div[data-section-id="ap"]') ||
+    document.querySelector('div[jsaction*="pane"]');
+
+  if (panel) {
+    const h1 = panel.querySelector('h1');
+    if (h1?.textContent?.trim()) return h1.textContent.trim();
+  }
+
+  const h1 = document.querySelector('h1.DUwDvf, h1.fontTitleLarge');
+  return h1?.textContent?.trim() || '';
+}
+
+// ── Clean Name Parser (replaces broken double split) ──────────────────────
+export function parseCardName(rawText: string): string {
+  if (!rawText) return '';
+  // Google Maps separates card title from rating/category with middle dot, bullet, or pipe
+  const firstChunk = rawText.split(/[·•|\n]/)[0].trim();
+
+  // Strip ratings, review counts, stars if present in the chunk
+  const cleaned = firstChunk
+    .replace(/★\s*[\d.]+/g, '')
+    .replace(/\b\d\.\d\s*(\([\d,]+\))?/g, '')
+    .replace(/\([\d,]+\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleaned || firstChunk;
+}
+
+// ── Extract phone from element (with clean phone:tel handling) ─────────────
+export function extractPhoneFromElement(container: HTMLElement): string {
+  const phoneEl =
+    container.querySelector('[data-item-id^="phone:tel:"]') ||
+    container.querySelector('button[data-item-id^="phone:tel:"]') ||
+    container.querySelector('button[data-tooltip*="phone" i]') ||
+    container.querySelector('button[aria-label*="phone" i], button[aria-label*="Phone" i]') ||
+    container.querySelector('button[aria-label*="ফোন" i]') ||
+    container.querySelector('[data-item-id*="phone"]');
+
+  if (phoneEl) {
+    const itemId = phoneEl.getAttribute('data-item-id') || '';
+    if (itemId.startsWith('phone:tel:')) {
+      return itemId.replace('phone:tel:', '').trim();
+    }
+    const label = phoneEl.getAttribute('aria-label') || phoneEl.textContent || '';
+    const m = label.match(/(?:\+?[\d]{1,4}[-.\s]?)?\(?[\d]{2,5}\)?[-.\s]?[\d]{3,5}[-.\s]?[\d]{3,5}/);
+    if (m && m[0].replace(/\D/g, '').length >= 7) {
+      return m[0].trim();
+    }
+  }
+
+  const text = container.textContent || '';
+  const matches = text.match(PHONE_REGEX);
+  if (matches) {
+    const valid = matches.find(
+      (p) => p.replace(/\D/g, '').length >= 7 && p.replace(/\D/g, '').length <= 15
+    );
+    if (valid) return valid.trim();
+  }
+  return '';
+}
+
+// ── Extract website from element (ignoring internal Google domains) ────────
+export function extractWebsiteFromElement(container: HTMLElement): string {
+  const webEl = container.querySelector<HTMLAnchorElement>(
+    'a[data-item-id="authority"], a[aria-label*="website" i], a[data-tooltip*="website" i], a[aria-label*="ওয়েবসাইট" i], a[data-value="Website"]'
+  );
+  if (webEl?.href && !isInternalGoogleDomain(webEl.href)) {
+    return webEl.href;
+  }
+
+  const allAnchors = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[href^='http']"));
+  for (const a of allAnchors) {
+    if (a.href && !isInternalGoogleDomain(a.href)) {
+      return a.href;
+    }
+  }
+  return '';
+}
+
+// Save lead to background queue with proper error handling
+export function saveLead(lead: object) {
+  chrome.runtime.sendMessage({ type: 'SAVE_LEAD', payload: lead }, (res) => {
+    if (chrome.runtime.lastError) {
+      console.warn('[LeadScraper] SAVE_LEAD error:', chrome.runtime.lastError.message);
+    } else {
+      console.log('[LeadScraper] Saved. Total:', res?.count);
+    }
+  });
+}
+</file>
+
+<file path="src/content/mapsScraper.ts">
+import type { Lead } from '@/types/lead';
+import {
+  waitFor,
+  waitForPanelUpdate,
+  getDetailPanelH1,
+  parseCardName,
+  extractPhoneFromElement,
+  extractWebsiteFromElement,
+  saveLead,
+  jitter,
+  EMAIL_REGEX,
+} from './domUtils';
+
+// Extract place ID from Google Maps URL for reliable tracking
+export function getPlaceId(href: string): string {
+  try {
+    const match = href.match(/\/maps\/place\/([^/]+)/);
+    if (match) return decodeURIComponent(match[1]);
+  } catch {
+    /* ignore URI decode errors */
+  }
+  return href;
+}
+
+// ── Extract full lead from detail panel ───────────────────────────────────
+export function extractFromDetailPanel(): Lead {
+  const lead: Lead = { source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
+
+  const detailPane =
+    document.querySelector('div[role="main"] div.m6QEdf') ||
+    document.querySelector('div.bJ2h1d') ||
+    document.querySelector('div[role="main"]') ||
+    document;
+
+  // Name
+  const titleEl = detailPane.querySelector('h1.DUwDvf, h1.fontTitleLarge, h1');
+  lead.name = titleEl?.textContent?.trim() || '';
+
+  // Phone — clean extraction from data-item-id="phone:tel:"
+  lead.phone = extractPhoneFromElement(detailPane as HTMLElement);
+
+  // Website — ignores internal Google domains
+  lead.website = extractWebsiteFromElement(detailPane as HTMLElement);
+
+  // Address
+  const addrEl = detailPane.querySelector(
+    'button[data-item-id="address"], button[aria-label*="address" i], button[aria-label*="ঠিকানা" i]'
+  );
+  if (addrEl) {
+    const raw =
+      addrEl.getAttribute('aria-label')?.replace(/^address:?\s*/i, '').replace(/^ঠিকানা:?\s*/i, '').trim() ||
+      addrEl.textContent?.trim() ||
+      '';
+    lead.address = raw;
+  }
+
+  // Email on Maps panel (if listed)
+  const paneText = detailPane.textContent || '';
+  const emailMatches = paneText.match(EMAIL_REGEX);
+  if (emailMatches) {
+    const validEmail = emailMatches.find(
+      (e) => !e.endsWith('.png') && !e.endsWith('.jpg') && !e.endsWith('.js') && !e.endsWith('.webp')
+    );
+    if (validEmail) lead.email = validEmail;
+  }
+
+  return lead;
+}
+
+// ── Google Maps Scraper ────────────────────────────────────────────────────
+export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void> {
+  console.log('[LeadScraper] Starting Google Maps extraction...');
+
+  // Wait for results feed
+  let feed: Element | null = await waitFor('div[role="feed"]', 12000, checkActive);
+  if (!feed) {
+    feed =
+      document.querySelector('div[aria-label*="Results" i]') ||
+      document.querySelector('div[aria-label*="ফলাফল" i]') ||
+      document.querySelector('div.m6QEdf[aria-label]') ||
+      document.querySelector('div.m6QEdf');
+  }
+
+  if (!feed) {
+    // Single place view fallback
+    const singleLead = extractFromDetailPanel();
+    if (singleLead?.name) {
+      saveLead(singleLead);
+      return;
+    }
+    chrome.runtime.sendMessage(
+      {
+        type: 'EXTRACTION_ERROR',
+        message: 'Google Maps search results not found. Please open a search page first.',
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          /* ignore */
+        }
+      }
+    );
+    return;
+  }
+
+  await jitter(1000, 1500);
+
+  // Track processed places by their unique place-ID in href
+  const processedIds = new Set<string>();
+  let stuckCount = 0;
+  let lastScrollTop = -1;
+
+  while (checkActive()) {
+    // Collect unprocessed result cards
+    const allAnchors = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('a[href*="/maps/place/"]')
+    );
+
+    // Deduplicate by extracting the place CID/ID from the URL
+    const newAnchors = allAnchors.filter((a) => {
+      const id = getPlaceId(a.href);
+      return id && !processedIds.has(id);
+    });
+
+    if (!checkActive()) break;
+
+    if (newAnchors.length === 0) {
+      // Humanized dynamic scroll increment (400px–750px)
+      const currentScroll = feed.scrollTop;
+      const scrollDelta = Math.floor(Math.random() * (750 - 400 + 1)) + 400;
+      feed.scrollTop += scrollDelta;
+      await jitter(1500, 2200);
+
+      if (!checkActive()) break;
+
+      if (Math.abs(feed.scrollTop - currentScroll) < 10 || feed.scrollTop === lastScrollTop) {
+        stuckCount++;
+        const endText = feed.textContent || '';
+        if (
+          endText.includes("You've reached the end") ||
+          endText.includes('তালিকায় আর কোনো স্থান নেই') ||
+          stuckCount >= 5
+        ) {
+          console.log('[LeadScraper] Reached end of list.');
+          break;
+        }
+      } else {
+        stuckCount = 0;
+      }
+      lastScrollTop = feed.scrollTop;
+      continue;
+    }
+
+    stuckCount = 0;
+
+    for (const anchor of newAnchors) {
+      if (!checkActive()) break;
+
+      const placeId = getPlaceId(anchor.href);
+      if (!placeId || processedIds.has(placeId)) continue;
+      processedIds.add(placeId);
+
+      // ── Step 1: Resilient Name Parsing (clean parser, no broken double-split) ──
+      const rawLabel = anchor.getAttribute('aria-label') || '';
+      const cardName = parseCardName(rawLabel) || parseCardName(anchor.textContent || '');
+
+      // ── Step 2: Get card-level data without clicking ──
+      const cardContainer =
+        anchor.closest('div.Nv251d, div[jsaction*="mouseover"], div[role="article"]') ||
+        anchor.parentElement?.parentElement ||
+        anchor.parentElement;
+
+      const cardPhone = cardContainer ? extractPhoneFromElement(cardContainer as HTMLElement) : '';
+      const cardWebsite = cardContainer ? extractWebsiteFromElement(cardContainer as HTMLElement) : '';
+
+      // ── Step 3: Scroll card into view ──
+      try {
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch {
+        /* ignore scroll errors */
+      }
+      await jitter(300, 500);
+      if (!checkActive()) break;
+
+      // Capture current h1 BEFORE clicking
+      const prevH1 = getDetailPanelH1();
+
+      // Click the card with realistic mouse events (Maps virtualized cards require full pointer sequence)
+      const mouseOpts = { bubbles: true, cancelable: true, view: window };
+      anchor.dispatchEvent(new MouseEvent('mousedown', mouseOpts));
+      anchor.dispatchEvent(new MouseEvent('mouseup', mouseOpts));
+      anchor.click();
+
+      if (cardContainer && cardContainer !== anchor) {
+        cardContainer.dispatchEvent(new MouseEvent('mousedown', mouseOpts));
+        cardContainer.dispatchEvent(new MouseEvent('mouseup', mouseOpts));
+      }
+
+      // Wait until h1 changes (confirms detail panel updated with new place)
+      const panelUpdated = await waitForPanelUpdate(prevH1, 3500, checkActive);
+      if (!checkActive()) break;
+
+      // Anti-bot delay after opening detail panel (1200ms–2500ms)
+      await jitter(1200, 2500);
+      if (!checkActive()) break;
+
+      // ── Step 4: Extract detail panel data ──
+      const detail = extractFromDetailPanel();
+
+      // Identify whether the panel is stale (failed to update or still shows prev item)
+      const isStalePanel = !panelUpdated || (
+        Boolean(prevH1) &&
+        Boolean(detail.name) &&
+        detail.name.trim().toLowerCase() === prevH1.trim().toLowerCase()
+      );
+
+      // ── Step 5: Build final lead ──
+      const finalName = (!isStalePanel && detail.name) ? detail.name : cardName;
+      const finalPhone = (!isStalePanel && detail.phone) ? detail.phone : cardPhone;
+      const finalWebsite = (!isStalePanel && detail.website) ? detail.website : cardWebsite;
+      const finalAddress = !isStalePanel ? detail.address : '';
+      const finalEmail = !isStalePanel ? detail.email : '';
+
+      const lead: Lead = {
+        source: 'Google Maps',
+        name: finalName,
+        phone: finalPhone,
+        email: finalEmail,
+        website: finalWebsite,
+        address: finalAddress,
+      };
+
+      if (lead.name) {
+        console.log('[LeadScraper] Lead:', lead.name, '| phone:', lead.phone, '| web:', lead.website);
+        saveLead(lead);
+      }
+
+      await jitter(200, 400);
+    }
+  }
+
+  console.log('[LeadScraper] Extraction finished. Total processed places:', processedIds.size);
+}
+</file>
+
 <file path="src/main.tsx">
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -2583,74 +2646,39 @@ export default defineConfig({
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #121212;
+  --foreground: #f4f4f5;
+  --card: #1c1c1e;
+  --card-foreground: #f4f4f5;
+  --popover: #1c1c1e;
+  --popover-foreground: #f4f4f5;
+  --primary: #c6f432;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1c;
+  --secondary-foreground: #f4f4f5;
+  --muted: #1e1e21;
+  --muted-foreground: #a1a1aa;
+  --accent: #222226;
+  --accent-foreground: #c6f432;
   --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: #1a1a1c;
+  --ring: #c6f432;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --radius: 0.75rem;
+  --sidebar: #18181b;
+  --sidebar-foreground: #f4f4f5;
+  --sidebar-primary: #c6f432;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #f4f4f5;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #c6f432;
 }
 
 @layer base {
@@ -2658,11 +2686,37 @@ export default defineConfig({
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #121212;
+    color: #f4f4f5;
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
   html {
     @apply font-sans;
+    background-color: #121212;
   }
+  ::selection {
+    background-color: #c6f432;
+    color: #000000;
+  }
+}
+
+/* Custom sleek dark scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
 }
 </file>
 
@@ -2796,7 +2850,7 @@ function App() {
   } = useExtraction();
 
   return (
-    <div className="w-[420px] min-h-[580px] bg-[#0f172a] text-slate-100 font-sans flex flex-col">
+    <div className="w-[420px] min-h-[580px] bg-[#121212] text-zinc-100 font-sans flex flex-col antialiased selection:bg-[#c6f432] selection:text-black">
       <Header platform={platform} platformColor={platformColor} />
 
       <SearchControls

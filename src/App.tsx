@@ -28,7 +28,7 @@ function App() {
   } = useExtraction();
 
   return (
-    <div className="w-[420px] min-h-[580px] bg-[#0f172a] text-slate-100 font-sans flex flex-col">
+    <div className="w-[420px] min-h-[580px] bg-[#121212] text-zinc-100 font-sans flex flex-col antialiased selection:bg-[#c6f432] selection:text-black">
       <Header platform={platform} platformColor={platformColor} />
 
       <SearchControls
