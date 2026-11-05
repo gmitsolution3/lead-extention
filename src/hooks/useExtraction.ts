@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { SearchGroup, Status, ExtractionStatusResponse } from '@/types/lead';
 import { sendMessageWithRetry } from '@/lib/messaging';
+
+export type ActiveView =
+  | { name: 'HOME' }
+  | { name: 'GROUP_DETAIL'; groupId: string };
 
 // Detect which platform is open in the active tab
 export function detectPlatform(url: string): string {
@@ -15,9 +19,11 @@ export function useExtraction() {
   const [errorMsg, setErrorMsg] = useState('');
   const [query, setQuery] = useState('');
   const [searchGroups, setSearchGroups] = useState<SearchGroup[]>([]);
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<ActiveView>({ name: 'HOME' });
   const [platform, setPlatform] = useState('Unknown');
   const [tabId, setTabId] = useState<number | null>(null);
+
+  const pendingGroupQueryRef = useRef<string>('');
 
   // ── Fetch active browser tab info ──────────────────────────────────────────
   useEffect(() => {
@@ -40,6 +46,7 @@ export function useExtraction() {
         setStatus('extracting');
         if (res.activeQuery) {
           setQuery(res.activeQuery);
+          pendingGroupQueryRef.current = res.activeQuery.trim();
         }
         if (res.activeTabId) {
           setTabId(res.activeTabId);
@@ -48,14 +55,30 @@ export function useExtraction() {
     });
   }, []);
 
-  // ── Helper to update search groups and retain/set expanded group ──────────
-  const updateGroupsAndDefaultExpand = useCallback((groups: SearchGroup[]) => {
+  // ── Helper to update search groups & handle view sync ─────────────────────
+  const updateGroups = useCallback((groups: SearchGroup[]) => {
     setSearchGroups(groups);
-    setExpandedGroupId((current) => {
-      if (current !== null && groups.some((g) => g.id === current)) {
-        return current;
+
+    // Auto-navigate to newly started search group
+    if (pendingGroupQueryRef.current) {
+      const match = groups.find(
+        (g) => g.query.trim().toLowerCase() === pendingGroupQueryRef.current.toLowerCase()
+      );
+      if (match) {
+        setCurrentView({ name: 'GROUP_DETAIL', groupId: match.id });
+        pendingGroupQueryRef.current = '';
       }
-      return groups.length > 0 ? groups[0].id : null;
+    }
+
+    // Deletion safety: if viewed group no longer exists, return to Home
+    setCurrentView((prev) => {
+      if (prev.name === 'GROUP_DETAIL') {
+        const stillExists = groups.some((g) => g.id === prev.groupId);
+        if (!stillExists) {
+          return { name: 'HOME' };
+        }
+      }
+      return prev;
     });
   }, []);
 
@@ -63,10 +86,10 @@ export function useExtraction() {
   const refreshSearchGroups = useCallback(() => {
     sendMessageWithRetry({ type: 'GET_SEARCH_GROUPS' }, (res) => {
       if (res?.searchGroups) {
-        updateGroupsAndDefaultExpand(res.searchGroups);
+        updateGroups(res.searchGroups);
       }
     });
-  }, [updateGroupsAndDefaultExpand]);
+  }, [updateGroups]);
 
   useEffect(() => {
     refreshSearchGroups();
@@ -92,7 +115,7 @@ export function useExtraction() {
       }
       if (msg.type === 'SEARCH_GROUPS_UPDATED') {
         if (msg.searchGroups) {
-          updateGroupsAndDefaultExpand(msg.searchGroups);
+          updateGroups(msg.searchGroups);
         } else {
           refreshSearchGroups();
         }
@@ -103,21 +126,32 @@ export function useExtraction() {
     };
     chrome.runtime.onMessage.addListener(handler);
     return () => chrome.runtime.onMessage.removeListener(handler);
-  }, [refreshSearchGroups, updateGroupsAndDefaultExpand]);
+  }, [refreshSearchGroups, updateGroups]);
 
-  // ── Start extraction ──────────────────────────────────────────────────────
+  // ── Navigation Handlers ───────────────────────────────────────────────────
+  const openGroup = useCallback((groupId: string) => {
+    setCurrentView({ name: 'GROUP_DETAIL', groupId });
+  }, []);
+
+  const goBack = useCallback(() => {
+    setCurrentView({ name: 'HOME' });
+  }, []);
+
+  // ── Start extraction (Auto-route to Search Detail View) ───────────────────
   const handleStart = () => {
     if (!query.trim()) return;
     const trimmed = query.trim();
     setStatus('extracting');
     setErrorMsg('');
+    pendingGroupQueryRef.current = trimmed;
 
-    // Pre-expand group if it exists
+    // If matching group already exists, immediately switch view
     const existing = searchGroups.find(
       (g) => g.query.trim().toLowerCase() === trimmed.toLowerCase()
     );
     if (existing) {
-      setExpandedGroupId(existing.id);
+      setCurrentView({ name: 'GROUP_DETAIL', groupId: existing.id });
+      pendingGroupQueryRef.current = '';
     }
 
     const sendStartCmd = (targetTabId: number) => {
@@ -163,23 +197,23 @@ export function useExtraction() {
   const handleDeleteLead = (groupId: string, leadId: string) => {
     sendMessageWithRetry({ type: 'DELETE_LEAD', groupId, leadId }, (res) => {
       if (res?.searchGroups) {
-        updateGroupsAndDefaultExpand(res.searchGroups);
+        updateGroups(res.searchGroups);
       } else {
         refreshSearchGroups();
       }
     });
   };
 
-  // ── Delete search group ──────────────────────────────────────────────────
+  // ── Delete search group (with immediate back routing) ─────────────────────
   const handleDeleteSearchGroup = (groupId: string) => {
+    if (currentView.name === 'GROUP_DETAIL' && currentView.groupId === groupId) {
+      goBack();
+    }
     sendMessageWithRetry({ type: 'DELETE_SEARCH_GROUP', groupId }, (res) => {
       if (res?.searchGroups) {
-        updateGroupsAndDefaultExpand(res.searchGroups);
+        updateGroups(res.searchGroups);
       } else {
         refreshSearchGroups();
-      }
-      if (expandedGroupId === groupId) {
-        setExpandedGroupId(null);
       }
     });
   };
@@ -199,10 +233,6 @@ export function useExtraction() {
       leads: group.leads,
       queryName: group.query,
     });
-  };
-
-  const toggleExpandGroup = (groupId: string) => {
-    setExpandedGroupId((prev) => (prev === groupId ? null : groupId));
   };
 
   const isExtracting = status === 'extracting';
@@ -234,9 +264,9 @@ export function useExtraction() {
     query,
     setQuery,
     searchGroups,
-    expandedGroupId,
-    setExpandedGroupId,
-    toggleExpandGroup,
+    currentView,
+    openGroup,
+    goBack,
     platform,
     platformColor,
     tabId,
