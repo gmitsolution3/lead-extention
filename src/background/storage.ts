@@ -1,6 +1,6 @@
 import type { Lead, ExtractionStatus } from '@/types/lead';
 import { DEFAULT_EXTRACTION_STATUS } from '@/types/lead';
-import { normalizeUrl } from '@/lib/url';
+import { normalizeUrl, extractFacebook } from '@/lib/url';
 import { enrichLeadEmail } from './enrichment';
 
 export let saveQueue: Promise<any> = Promise.resolve();
@@ -52,6 +52,8 @@ export function findDuplicateIndex(candidate: Lead, existingLeads: Lead[]): numb
   const candDigits = extractPhoneDigits(candidate.phone || '');
   const normWeb = (candidate.website || '').trim().toLowerCase();
   const normAddr = (candidate.address || '').trim().toLowerCase();
+  const cleanCandWeb = normalizeUrl(candidate.website || '');
+  const cleanCandFb = normalizeUrl(candidate.facebook || '');
 
   return existingLeads.findIndex((l) => {
     // a) Phone match: digits length >= 7 and identical
@@ -60,22 +62,32 @@ export function findDuplicateIndex(candidate: Lead, existingLeads: Lead[]): numb
       return true;
     }
 
+    // b) Facebook match: both have non-empty Facebook URLs (length > 12) and are identical
+    const cleanExFb = normalizeUrl(l.facebook || '');
+    if (cleanCandFb.length > 12 && cleanExFb.length > 12 && cleanCandFb === cleanExFb) {
+      return true;
+    }
+
     const exNormName = (l.name || '').trim().toLowerCase();
     const sameName = normName === exNormName && normName.length > 0;
 
     if (sameName) {
-      // b) Name + Website match: exact normalized name AND normalized website matches (length > 10)
+      // c) Name + Website match: exact normalized name AND normalized website matches (length > 10 / length > 6)
       const exNormWeb = (l.website || '').trim().toLowerCase();
       if (normWeb.length > 10 && exNormWeb.length > 10 && normWeb === exNormWeb) {
         return true;
       }
-      const cleanCandWeb = normalizeUrl(candidate.website || '');
       const cleanExWeb = normalizeUrl(l.website || '');
-      if (cleanCandWeb.length > 6 && cleanCandWeb === cleanExWeb) {
+      if (cleanCandWeb.length > 6 && cleanExWeb.length > 6 && cleanCandWeb === cleanExWeb) {
         return true;
       }
 
-      // c) Name + Address match: exact normalized name AND normalized street address matches (length > 15)
+      // d) Name + Facebook match
+      if (cleanCandFb.length > 12 && cleanExFb.length > 12 && cleanCandFb === cleanExFb) {
+        return true;
+      }
+
+      // e) Name + Address match: exact normalized name AND normalized street address matches (length > 15)
       const exNormAddr = (l.address || '').trim().toLowerCase();
       if (normAddr.length > 15 && exNormAddr.length > 15 && normAddr === exNormAddr) {
         return true;
@@ -115,9 +127,17 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
         changed = true;
       }
       if (!existing.website && newLead.website) {
-        existing.website = newLead.website;
-        changed = true;
-        websiteNewlyFilled = true;
+        const isFb = Boolean(extractFacebook(newLead.website));
+        if (isFb) {
+          if (!existing.facebook) {
+            existing.facebook = newLead.website;
+            changed = true;
+          }
+        } else {
+          existing.website = newLead.website;
+          changed = true;
+          websiteNewlyFilled = true;
+        }
       }
       if (!existing.address && newLead.address) {
         existing.address = newLead.address;
@@ -151,7 +171,7 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
     await saveLeads(leads);
 
     // Asynchronously enrich email if website is present and email is missing
-    if (newLead.website && !newLead.email) {
+    if (newLead.website && !extractFacebook(newLead.website) && !newLead.email) {
       enrichLeadEmail(newLead).catch(() => {});
     }
 

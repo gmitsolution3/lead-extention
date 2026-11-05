@@ -135,5 +135,20 @@ assert.strictEqual(empty.phone, '');
 assert.strictEqual(empty.website, '');
 assert.strictEqual(empty.address, '');
 
+console.log('Testing extractFromDetailPanel on Facebook-only place...');
+const fbPane = new MockElement('div', { role: 'main', 'aria-label': 'Pet Facebook Shop' });
+const fbH1 = new MockElement('h1', { textContent: 'Pet Facebook Shop' });
+const fbLink = new MockElement('a', {
+  'data-item-id': 'authority',
+  href: 'https://www.facebook.com/petfacebookshop',
+  'aria-label': 'Website: facebook.com',
+});
+fbPane.appendChild(fbH1);
+fbPane.appendChild(fbLink);
+const fbLead = extractFromDetailPanel(fbPane);
+assert.strictEqual(fbLead.name, 'Pet Facebook Shop');
+assert.strictEqual(fbLead.website, '', 'Facebook link must leave website empty');
+assert.strictEqual(fbLead.facebook, 'https://www.facebook.com/petfacebookshop');
+
 console.log('DOM simulation test passed successfully!');
 

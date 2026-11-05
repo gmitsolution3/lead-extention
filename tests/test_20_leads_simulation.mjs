@@ -62,14 +62,15 @@ for (const place of rawPlaces) {
   const waitedMs = 750;
   const rowIds = ['address', ...(place.phone ? ['phone:tel:' + place.phone] : []), ...(place.website ? ['authority'] : [])];
 
+  const isFb = Boolean(extractFacebook(place.website));
   const lead = {
     source: 'Google Maps',
     name: place.name,
     phone: place.phone,
     email: '',
-    website: place.website,
+    website: isFb ? '' : place.website,
     address: place.address,
-    facebook: extractFacebook(place.website),
+    facebook: isFb ? place.website : undefined,
   };
 
   const source = {
@@ -103,10 +104,12 @@ let noWebsite = 0;
 for (let i = 0; i < savedLeads.length; i++) {
   const saved = savedLeads[i];
   const orig = rawPlaces[i];
+  const isFb = Boolean(extractFacebook(orig.website));
 
   assert.strictEqual(saved.name, orig.name);
   assert.strictEqual(saved.phone, orig.phone);
-  assert.strictEqual(saved.website, orig.website);
+  assert.strictEqual(saved.website, isFb ? '' : orig.website);
+  assert.strictEqual(saved.facebook, isFb ? orig.website : undefined);
   assert.strictEqual(saved.address, orig.address);
 
   if (saved.website) withWebsite++;
@@ -119,21 +122,26 @@ for (let i = 0; i < savedLeads.length; i++) {
 console.log(`Results from 20 leads check:`);
 console.log(`- Total saved leads: ${savedLeads.length} / 20`);
 console.log(`- Leads with address: ${withAddress} (100%)`);
-console.log(`- Leads with website: ${withWebsite} (15/20 = 75%)`);
+console.log(`- Leads with website: ${withWebsite} (10/20 = 50%)`);
 console.log(`- Leads with Facebook detected: ${withFacebook} (5/20)`);
-console.log(`- Leads without website (prospects): ${noWebsite} (5/20 = 25%)`);
+console.log(`- Leads without website (prospects): ${noWebsite} (10/20 = 50%)`);
+
+assert.strictEqual(withWebsite, 10, 'Should have exactly 10 standalone websites');
+assert.strictEqual(noWebsite, 10, 'Should have exactly 10 prospects without website (5 none + 5 FB only)');
+assert.strictEqual(withFacebook, 5, 'Should have exactly 5 facebook links');
 
 // Verify re-run without clearing: duplicate merge test
 console.log('--- Testing re-run without clearing ---');
 for (const place of rawPlaces) {
+  const isFb = Boolean(extractFacebook(place.website));
   const res = await enqueueSaveLead({
     source: 'Google Maps',
     name: place.name,
     phone: place.phone,
     email: 'newemail@example.com', // simulate email discovered
-    website: place.website,
+    website: isFb ? '' : place.website,
     address: place.address,
-    facebook: extractFacebook(place.website),
+    facebook: isFb ? place.website : undefined,
   });
   assert.strictEqual(res.status, 'merged');
 }
@@ -141,6 +149,8 @@ for (const place of rawPlaces) {
 const leadsAfterRerun = await getLeads();
 assert.strictEqual(leadsAfterRerun.length, 20, 'Lead count must not increase on duplicate run');
 assert.strictEqual(leadsAfterRerun[0].email, 'newemail@example.com', 'Empty field should be merged');
+assert.strictEqual(leadsAfterRerun[2].website, '', 'Facebook-only leads must retain empty website after merge');
+assert.strictEqual(leadsAfterRerun[2].facebook, 'https://www.facebook.com/dhakabirdhouse', 'Facebook link must be preserved on merge');
 
 console.log('20-lead benchmark test completed successfully!');
 

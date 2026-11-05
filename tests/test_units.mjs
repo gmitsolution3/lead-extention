@@ -51,7 +51,7 @@ import {
   clearLeads,
   getLeads,
 } from '../src/background/storage.ts';
-import { getScrollContainer } from '../src/content/mapsScraper.ts';
+import { getScrollContainer, extractFromDetailPanel } from '../src/content/mapsScraper.ts';
 import {
   generateCsv,
   generateXml,
@@ -122,7 +122,7 @@ assert.strictEqual(parseCardName('AB · 4.5 ★'), 'AB');
 // 7. findDuplicateIndex
 console.log('Testing findDuplicateIndex...');
 const existing = [
-  { source: 'Google Maps', name: 'Pet Bangla', phone: '01784000999', email: '', website: 'http://petbangla.com', address: 'Road 10, Mirpur' },
+  { source: 'Google Maps', name: 'Pet Bangla', phone: '01784000999', email: '', website: 'http://petbangla.com', address: 'Road 10, Mirpur', facebook: 'https://facebook.com/petbangla' },
   { source: 'Google Maps', name: 'Dhaka Pet Zone', phone: '', email: '', website: 'https://dhakapet.com', address: 'Sector 4, Uttara' },
   { source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Plot 5, Section 10, Mirpur 10, Dhaka 1216' },
 ];
@@ -130,11 +130,17 @@ const existing = [
 // Match by phone
 assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Different Name', phone: '01784-000999', email: '', website: '' }, existing), 0);
 
+// Match by Facebook URL
+assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Different Name FB', phone: '', email: '', website: '', facebook: 'https://facebook.com/petbangla' }, existing), 0);
+
 // Match by name + website
 assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Dhaka Pet Zone', phone: '', email: '', website: 'https://dhakapet.com' }, existing), 1);
 
 // Match by name + address
 assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Plot 5, Section 10, Mirpur 10, Dhaka 1216' }, existing), 2);
+
+// Ensure empty string websites are not treated as duplicate matches
+assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Different Street 123' }, existing), -1);
 
 // Non-duplicate
 assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Brand New Shop', phone: '01999999999', email: '', website: 'https://newshop.com' }, existing), -1);
@@ -147,7 +153,7 @@ const sampleLeads = [
     name: 'Pet Bangla',
     phone: '01784000999',
     email: 'info@petbangla.com',
-    website: 'https://facebook.com/petbangla',
+    website: '',
     address: 'Road 10, Mirpur',
     facebook: 'https://facebook.com/petbangla',
   },
@@ -163,7 +169,7 @@ const sampleLeads = [
 
 const csv = generateCsv(sampleLeads);
 assert.ok(csv.startsWith('\uFEFFSource,Name,Phone,Email,Website,Address,Facebook'), 'CSV header should have Facebook at the end');
-assert.ok(csv.includes('"Google Maps","Pet Bangla","01784000999","info@petbangla.com","https://facebook.com/petbangla","Road 10, Mirpur","https://facebook.com/petbangla"'));
+assert.ok(csv.includes('"Google Maps","Pet Bangla","01784000999","info@petbangla.com","","Road 10, Mirpur","https://facebook.com/petbangla"'));
 assert.ok(csv.includes('"Google Maps","No Web Shop","01700000000","","","Mirpur 10",""'));
 
 const xml = generateXml(sampleLeads);
@@ -249,5 +255,35 @@ const dummyFeed = {
 };
 const foundContainer = getScrollContainer(dummyFeed);
 assert.strictEqual(foundContainer, dummyFeed.parentElement);
+
+// 11. extractFromDetailPanel Facebook vs Website separation
+console.log('Testing extractFromDetailPanel Facebook vs Website separation...');
+const mockFbPane = {
+  getAttribute: (attr) => (attr === 'aria-label' ? 'Pet Bangla FB' : null),
+  querySelector: (sel) => {
+    if (sel === 'h1') return { textContent: 'Pet Bangla FB' };
+    if (sel.includes('authority')) return { href: 'https://www.facebook.com/petbangla', getAttribute: () => 'https://www.facebook.com/petbangla' };
+    return null;
+  },
+  querySelectorAll: () => [],
+  textContent: '',
+};
+const fbLead = extractFromDetailPanel(mockFbPane);
+assert.strictEqual(fbLead.website, '', 'Facebook link should not be assigned to website');
+assert.strictEqual(fbLead.facebook, 'https://www.facebook.com/petbangla', 'Facebook link should be assigned to facebook');
+
+const mockWebPane = {
+  getAttribute: (attr) => (attr === 'aria-label' ? 'Pet Bangla Web' : null),
+  querySelector: (sel) => {
+    if (sel === 'h1') return { textContent: 'Pet Bangla Web' };
+    if (sel.includes('authority')) return { href: 'http://petbangla.com/', getAttribute: () => 'http://petbangla.com/' };
+    return null;
+  },
+  querySelectorAll: () => [],
+  textContent: '',
+};
+const webLead = extractFromDetailPanel(mockWebPane);
+assert.strictEqual(webLead.website, 'http://petbangla.com/', 'Regular website should be assigned to website');
+assert.strictEqual(webLead.facebook, undefined, 'Regular website should not populate facebook');
 
 console.log('All tests passed successfully!');

@@ -68,8 +68,11 @@ export function extractFromDetailPanel(pane?: HTMLElement | null): Lead {
   // Phone
   const phone = extractPhoneFromElement(pane);
 
-  // Website
-  const website = extractWebsiteFromElement(pane);
+  // Website & Facebook
+  const rawWebsite = extractWebsiteFromElement(pane);
+  const facebookUrl = extractFacebook(rawWebsite);
+  const website = facebookUrl ? '' : rawWebsite;
+  const facebook = facebookUrl || undefined;
 
   // Address
   const addrEl = pane.querySelector(
@@ -91,8 +94,6 @@ export function extractFromDetailPanel(pane?: HTMLElement | null): Lead {
     );
     if (validEmail) email = validEmail;
   }
-
-  const facebook = extractFacebook(website);
 
   return {
     source: 'Google Maps',
@@ -214,7 +215,9 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
         anchor.parentElement;
 
       const cardPhone = cardContainer ? extractPhoneFromElement(cardContainer as HTMLElement) : '';
-      const cardWebsite = cardContainer ? extractWebsiteFromElement(cardContainer as HTMLElement) : '';
+      const rawCardWebsite = cardContainer ? extractWebsiteFromElement(cardContainer as HTMLElement) : '';
+      const cardFacebook = extractFacebook(rawCardWebsite);
+      const cardWebsite = cardFacebook ? '' : rawCardWebsite;
       const cardAddress = cardContainer ? extractAddressFromElement(cardContainer as HTMLElement) : '';
 
       // ── Step 3: Click with retry loop (up to 3 attempts) ──
@@ -277,10 +280,14 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
 
       const finalName = (isVerified && detail.name) ? detail.name : cardName;
       const finalPhone = (isVerified && detail.phone) ? detail.phone : cardPhone;
-      const finalWebsite = (isVerified && detail.website) ? detail.website : cardWebsite;
+      const rawWeb = (isVerified && detail.website) ? detail.website : cardWebsite;
+      const isFb = Boolean(extractFacebook(rawWeb));
+      const finalFacebook = (isVerified && detail.facebook)
+        ? detail.facebook
+        : (isFb ? rawWeb : cardFacebook || undefined);
+      const finalWebsite = isFb ? '' : rawWeb;
       const finalAddress = (isVerified && detail.address) ? detail.address : cardAddress;
       const finalEmail = (isVerified && detail.email) ? detail.email : '';
-      const facebook = (isVerified && detail.facebook) ? detail.facebook : extractFacebook(finalWebsite);
 
       const lead: Lead = {
         source: 'Google Maps',
@@ -289,12 +296,12 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
         email: finalEmail,
         website: finalWebsite,
         address: finalAddress,
-        ...(facebook ? { facebook } : {}),
+        ...(finalFacebook ? { facebook: finalFacebook } : {}),
       };
 
       const source = {
         phone: (isVerified && detail.phone) ? 'detail' : cardPhone ? 'card' : '',
-        website: (isVerified && detail.website) ? 'detail' : cardWebsite ? 'card' : '',
+        website: (isVerified && (detail.website || detail.facebook)) ? 'detail' : (cardWebsite || cardFacebook) ? 'card' : '',
         address: (isVerified && detail.address) ? 'detail' : cardAddress ? 'card' : '',
       };
 

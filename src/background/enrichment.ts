@@ -90,6 +90,8 @@ export async function enrichLeadEmail(lead: Lead): Promise<void> {
     if (
       host.includes('google.') ||
       host.includes('facebook.com') ||
+      host === 'fb.com' ||
+      host.endsWith('.fb.com') ||
       host.includes('instagram.com') ||
       host.includes('twitter.com') ||
       host.includes('x.com') ||
@@ -133,4 +135,3 @@ export async function enrichLeadEmail(lead: Lead): Promise<void> {
     // Non-blocking enrichment failure
   }
 }
-
