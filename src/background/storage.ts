@@ -1,4 +1,4 @@
-import type { Lead, SearchGroup, ExtractionStatus } from '@/types/lead';
+import type { Lead, SearchGroup, KnownLeads, ExtractionStatus } from '@/types/lead';
 import { DEFAULT_EXTRACTION_STATUS, generateLeadId } from '@/types/lead';
 import { normalizeUrl, extractFacebook } from '@/lib/url';
 import { enrichLeadEmail } from './enrichment';
@@ -24,6 +24,7 @@ export const getSearchGroups = (): Promise<SearchGroup[]> =>
           id: 'legacy-default',
           query: 'Previous Leads',
           createdAt: Date.now(),
+          updatedAt: Date.now(),
           leads: legacyLeads.map((l, i) => ({
             ...l,
             id: l.id || `legacy-${i}-${Date.now()}`,
@@ -48,6 +49,7 @@ export const saveLeads = async (leads: Lead[]): Promise<void> => {
   const groups = await getSearchGroups();
   if (groups.length > 0) {
     groups[0].leads = leads;
+    groups[0].updatedAt = Date.now();
     await saveSearchGroups(groups);
   } else {
     await saveSearchGroups([
@@ -55,6 +57,7 @@ export const saveLeads = async (leads: Lead[]): Promise<void> => {
         id: 'default',
         query: 'Direct Extraction',
         createdAt: Date.now(),
+        updatedAt: Date.now(),
         leads: leads.map((l) => ({ ...l, id: l.id || generateLeadId() })),
       },
     ]);
@@ -89,6 +92,38 @@ export const setExtractionStatus = async (
 
 export function extractPhoneDigits(phone: string): string {
   return (phone || '').replace(/\D/g, '');
+}
+
+export async function getKnownLeadsForQuery(query: string): Promise<KnownLeads> {
+  const groups = await getSearchGroups();
+  const existingGroup = groups.find(
+    (g) => g.query.trim().toLowerCase() === (query || '').trim().toLowerCase()
+  );
+  if (!existingGroup) {
+    return { phoneDigits: [], normalizedNames: [], websites: [] };
+  }
+  const phoneDigits = Array.from(
+    new Set(
+      existingGroup.leads
+        .map((l) => extractPhoneDigits(l.phone || ''))
+        .filter((d) => d.length >= 7)
+    )
+  );
+  const normalizedNames = Array.from(
+    new Set(
+      existingGroup.leads
+        .map((l) => (l.name || '').toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, ''))
+        .filter((n) => n.length > 0)
+    )
+  );
+  const websites = Array.from(
+    new Set(
+      existingGroup.leads
+        .flatMap((l) => [normalizeUrl(l.website || ''), normalizeUrl(l.facebook || '')])
+        .filter((w) => w.length > 6)
+    )
+  );
+  return { phoneDigits, normalizedNames, websites };
 }
 
 export function findDuplicateIndex(candidate: Lead, existingLeads: Lead[]): number {
@@ -152,6 +187,7 @@ export function deleteLead(groupId: string, leadId: string): Promise<SearchGroup
     const targetGroup = groups.find((g) => g.id === groupId);
     if (targetGroup) {
       targetGroup.leads = targetGroup.leads.filter((l) => l.id !== leadId);
+      targetGroup.updatedAt = Date.now();
       await saveSearchGroups(groups);
       chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {
         if (chrome.runtime.lastError) {
@@ -214,9 +250,12 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
         id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         query: activeQuery,
         createdAt: Date.now(),
+        updatedAt: Date.now(),
         leads: [],
       };
       groups.unshift(group);
+    } else {
+      group.updatedAt = Date.now();
     }
 
     // 4. Duplicate detection and merging strictly within this group
@@ -259,6 +298,7 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
       }
 
       if (changed) {
+        group.updatedAt = Date.now();
         await saveSearchGroups(groups);
         chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {
           if (chrome.runtime.lastError) {
@@ -283,6 +323,7 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
     }
 
     group.leads.push(newLead);
+    group.updatedAt = Date.now();
     await saveSearchGroups(groups);
 
     chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {

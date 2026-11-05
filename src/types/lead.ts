@@ -14,7 +14,14 @@ export interface SearchGroup {
   id: string; // Unique session ID
   query: string; // The search phrase, e.g. "pet shop mirpur 10"
   createdAt: number;
+  updatedAt?: number;
   leads: Lead[];
+}
+
+export interface KnownLeads {
+  phoneDigits: string[];
+  normalizedNames: string[];
+  websites: string[];
 }
 
 export function generateLeadId(): string {

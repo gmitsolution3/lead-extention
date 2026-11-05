@@ -68,6 +68,7 @@ import {
   deleteLead,
   deleteSearchGroup,
   setExtractionStatus,
+  getKnownLeadsForQuery,
 } from '../src/background/storage.ts';
 import { getScrollContainer, extractFromDetailPanel } from '../src/content/mapsScraper.ts';
 import {
@@ -295,6 +296,76 @@ console.log('Testing deleteSearchGroup...');
 const afterGroupDelete = await deleteSearchGroup(schoolGroupId);
 assert.strictEqual(afterGroupDelete.length, 1, 'Only 1 search group should remain');
 assert.strictEqual(afterGroupDelete[0].query, 'pet shop mirpur 10');
+
+// 9.7: Resumable incremental extraction on duplicate search queries
+console.log('Testing resumable incremental extraction on duplicate search queries...');
+await clearSearchGroups();
+const queryIncremental = 'pet shop in mirpur 10';
+await setExtractionStatus({ isExtracting: true, activeQuery: queryIncremental });
+
+// Step 1: Save 5 initial leads
+for (let i = 1; i <= 5; i++) {
+  await enqueueSaveLead({
+    id: '',
+    source: 'Google Maps',
+    name: `Shop ${i}`,
+    phone: `0170000000${i}`,
+    email: '',
+    website: `http://shop${i}.com`,
+    address: `Mirpur 10 Road ${i}`,
+  });
+}
+
+// Step 2: Stop extraction and verify initial count
+await setExtractionStatus({ isExtracting: false, activeQuery: '' });
+let incGroups = await getSearchGroups();
+assert.strictEqual(incGroups.length, 1, 'Should have exactly 1 group');
+assert.strictEqual(incGroups[0].query, queryIncremental);
+assert.strictEqual(incGroups[0].leads.length, 5, 'Should have 5 initial leads');
+
+// Step 3: Check getKnownLeadsForQuery
+const known = await getKnownLeadsForQuery(queryIncremental);
+assert.strictEqual(known.phoneDigits.length, 5, 'Should have 5 known phones');
+assert.strictEqual(known.normalizedNames.length, 5, 'Should have 5 known names');
+assert.strictEqual(known.websites.length, 5, 'Should have 5 known websites');
+
+// Step 4: Run search again with same query, re-feeding 5 existing (skipped/merged) + 3 new leads
+await setExtractionStatus({ isExtracting: true, activeQuery: queryIncremental });
+
+// Re-saving existing leads must not duplicate them
+for (let i = 1; i <= 5; i++) {
+  const res = await enqueueSaveLead({
+    id: '',
+    source: 'Google Maps',
+    name: `Shop ${i}`,
+    phone: `0170000000${i}`,
+    email: `shop${i}@example.com`, // merged email
+    website: `http://shop${i}.com`,
+    address: `Mirpur 10 Road ${i}`,
+  });
+  assert.strictEqual(res.status, 'merged');
+}
+
+// 3 completely new leads (Leads 6 to 8)
+for (let i = 6; i <= 8; i++) {
+  const res = await enqueueSaveLead({
+    id: '',
+    source: 'Google Maps',
+    name: `Shop ${i}`,
+    phone: `0170000000${i}`,
+    email: '',
+    website: `http://shop${i}.com`,
+    address: `Mirpur 10 Road ${i}`,
+  });
+  assert.strictEqual(res.status, 'ok');
+}
+
+// Step 5: Verify group is reused and leads are appended from 5 to 8 without duplicate groups
+incGroups = await getSearchGroups();
+assert.strictEqual(incGroups.length, 1, 'Must NOT create duplicate search groups for same query');
+assert.strictEqual(incGroups[0].leads.length, 8, 'Leads must append incrementally from 5 to 8');
+assert.strictEqual(incGroups[0].leads[0].email, 'shop1@example.com', 'Existing lead merged email properly');
+assert.strictEqual(incGroups[0].leads[7].name, 'Shop 8', 'New lead appended correctly at the end');
 
 // 10. getScrollContainer
 console.log('Testing getScrollContainer...');

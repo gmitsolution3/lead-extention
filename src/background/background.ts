@@ -9,10 +9,11 @@ import {
   getExtractionStatus,
   setExtractionStatus,
   enqueueSaveLead,
+  getKnownLeadsForQuery,
 } from './storage';
 import { navigateTabAndScrape, sendStartScrapingWithRetry } from './navigation';
 
-export type { Lead, SearchGroup, ExtractionStatus } from '@/types/lead';
+export type { Lead, SearchGroup, KnownLeads, ExtractionStatus } from '@/types/lead';
 
 // ── Tab Lifecycle Cleanups ───────────────────────────────────────────────────
 chrome.tabs.onRemoved.addListener(async (tabId) => {
@@ -43,6 +44,8 @@ chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
         activeTabId: validTabId,
       });
 
+      const knownLeads = await getKnownLeadsForQuery(query || '');
+
       chrome.tabs.get(validTabId, (tab) => {
         if (chrome.runtime.lastError || !tab) {
           console.error('[BG] tab get error:', chrome.runtime.lastError?.message);
@@ -52,12 +55,12 @@ chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
 
         if (tab.url && tab.url.includes('google.com/maps/search/')) {
           if (tab.url !== targetUrl) {
-            navigateTabAndScrape(validTabId, targetUrl);
+            navigateTabAndScrape(validTabId, targetUrl, query, knownLeads);
           } else {
-            sendStartScrapingWithRetry(validTabId);
+            sendStartScrapingWithRetry(validTabId, query, knownLeads);
           }
         } else {
-          navigateTabAndScrape(validTabId, targetUrl);
+          navigateTabAndScrape(validTabId, targetUrl, query, knownLeads);
         }
       });
     };

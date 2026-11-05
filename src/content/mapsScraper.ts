@@ -1,5 +1,6 @@
-import type { Lead } from '@/types/lead';
+import type { Lead, KnownLeads } from '@/types/lead';
 import { generateLeadId } from '@/types/lead';
+import { normalizeUrl } from '@/lib/url';
 import {
   waitFor,
   waitForPanelUpdate,
@@ -16,6 +17,7 @@ import {
   waitForDetailReady,
   isVisible,
   extractFacebook,
+  normalizeName,
 } from './domUtils';
 
 export {
@@ -109,8 +111,15 @@ export function extractFromDetailPanel(pane?: HTMLElement | null): Lead {
 }
 
 // ── Google Maps Scraper ────────────────────────────────────────────────────
-export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void> {
+export async function scrapeGoogleMaps(
+  checkActive: () => boolean,
+  knownLeads?: KnownLeads
+): Promise<void> {
   console.log('[LeadScraper] Starting Google Maps extraction...');
+
+  const knownPhoneDigitsSet = new Set<string>(knownLeads?.phoneDigits || []);
+  const knownNamesSet = new Set<string>(knownLeads?.normalizedNames || []);
+  const knownWebsitesSet = new Set<string>(knownLeads?.websites || []);
 
   // Wait for results feed
   let feed: Element | null = await waitFor('div[role="feed"]', 12000, checkActive);
@@ -222,6 +231,22 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
       const cardWebsite = cardFacebook ? '' : rawCardWebsite;
       const cardAddress = cardContainer ? extractAddressFromElement(cardContainer as HTMLElement) : '';
 
+      // ── Resumable Incremental Continuation: Skip already-saved places ──
+      const cardPhoneDigits = (cardPhone || '').replace(/\D/g, '');
+      if (cardPhoneDigits.length >= 7 && knownPhoneDigitsSet.has(cardPhoneDigits)) {
+        console.log(`[LeadScraper] Skipping already-saved lead (phone match): ${cardName}`);
+        continue;
+      }
+
+      const normName = normalizeName(cardName);
+      const normCardWeb = normalizeUrl(cardWebsite || cardFacebook || '');
+      if (normName && knownNamesSet.has(normName)) {
+        if (normCardWeb.length > 6 && knownWebsitesSet.has(normCardWeb)) {
+          console.log(`[LeadScraper] Skipping already-saved lead (name+web match): ${cardName}`);
+          continue;
+        }
+      }
+
       // ── Step 3: Click with retry loop (up to 3 attempts) ──
       let readyResult = {
         pane: null as HTMLElement | null,
@@ -323,6 +348,16 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
       if (lead.name) {
         console.log('[LeadScraper] Lead:', lead.name, '| phone:', lead.phone, '| web:', lead.website);
         saveLead(lead);
+
+        // Add newly collected identifiers to prevent re-visiting on dynamic page re-renders
+        const pDigits = (lead.phone || '').replace(/\D/g, '');
+        if (pDigits.length >= 7) knownPhoneDigitsSet.add(pDigits);
+        const nName = normalizeName(lead.name);
+        if (nName) knownNamesSet.add(nName);
+        const w1 = normalizeUrl(lead.website || '');
+        if (w1.length > 6) knownWebsitesSet.add(w1);
+        const w2 = normalizeUrl(lead.facebook || '');
+        if (w2.length > 6) knownWebsitesSet.add(w2);
       }
 
       if (isVerified) {

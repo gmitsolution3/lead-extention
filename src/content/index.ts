@@ -1,3 +1,4 @@
+import type { KnownLeads } from '@/types/lead';
 import { scrapeGoogleMaps } from './mapsScraper';
 import { scrapeGenericPage } from './genericScraper';
 
@@ -6,12 +7,12 @@ try {
   console.log('[LeadScraper] Content script loaded on:', window.location.href);
 
   // ── Main orchestrator ──────────────────────────────────────────────────────
-  async function startScrapeProcess() {
+  async function startScrapeProcess(knownLeads?: KnownLeads) {
     const isMaps =
       window.location.hostname.includes('google.com') &&
       window.location.pathname.includes('/maps');
     if (isMaps) {
-      await scrapeGoogleMaps(() => isExtracting);
+      await scrapeGoogleMaps(() => isExtracting, knownLeads);
     } else {
       await scrapeGenericPage();
     }
@@ -30,7 +31,7 @@ try {
           return true;
         }
         isExtracting = true;
-        startScrapeProcess()
+        startScrapeProcess(req.knownLeads)
           .catch((err) => {
             console.error('[LeadScraper] Error:', err);
             chrome.runtime.sendMessage(

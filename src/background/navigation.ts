@@ -1,6 +1,12 @@
+import type { KnownLeads } from '@/types/lead';
 import { setExtractionStatus } from './storage';
 
-export function sendStartScrapingWithRetry(tabId: number, retries = 30) {
+export function sendStartScrapingWithRetry(
+  tabId: number,
+  query?: string,
+  knownLeads?: KnownLeads,
+  retries = 30
+) {
   let attempts = 0;
   const interval = setInterval(() => {
     attempts++;
@@ -26,17 +32,26 @@ export function sendStartScrapingWithRetry(tabId: number, retries = 30) {
       }
       // Content script is alive and responding!
       clearInterval(interval);
-      chrome.tabs.sendMessage(tabId, { action: 'START_SCRAPING' }, (res) => {
-        if (chrome.runtime.lastError) {
-          /* ignore */
+      chrome.tabs.sendMessage(
+        tabId,
+        { action: 'START_SCRAPING', query, knownLeads },
+        (res) => {
+          if (chrome.runtime.lastError) {
+            /* ignore */
+          }
+          console.log('[BG] START_SCRAPING response:', res);
         }
-        console.log('[BG] START_SCRAPING response:', res);
-      });
+      );
     });
   }, 500);
 }
 
-export function navigateTabAndScrape(tabId: number, targetUrl: string) {
+export function navigateTabAndScrape(
+  tabId: number,
+  targetUrl: string,
+  query?: string,
+  knownLeads?: KnownLeads
+) {
   let navigationHandled = false;
 
   const onUpdated = (id: number, info: { status?: string }) => {
@@ -44,7 +59,7 @@ export function navigateTabAndScrape(tabId: number, targetUrl: string) {
     navigationHandled = true;
     chrome.tabs.onUpdated.removeListener(onUpdated);
     clearTimeout(navTimeout);
-    sendStartScrapingWithRetry(tabId);
+    sendStartScrapingWithRetry(tabId, query, knownLeads);
   };
 
   // Register listener BEFORE triggering navigation (fixes race condition)
@@ -54,7 +69,7 @@ export function navigateTabAndScrape(tabId: number, targetUrl: string) {
   const navTimeout = setTimeout(() => {
     if (navigationHandled) return;
     chrome.tabs.onUpdated.removeListener(onUpdated);
-    sendStartScrapingWithRetry(tabId);
+    sendStartScrapingWithRetry(tabId, query, knownLeads);
   }, 15000);
 
   chrome.tabs.update(tabId, { url: targetUrl }, () => {
@@ -78,4 +93,3 @@ export function navigateTabAndScrape(tabId: number, targetUrl: string) {
     }
   });
 }
-
