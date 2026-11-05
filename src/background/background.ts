@@ -1,15 +1,18 @@
 import type { Lead } from '@/types/lead';
 import { exportCsv, exportXml } from '@/lib/exporters';
 import {
+  getSearchGroups,
   getLeads,
   clearLeads,
+  deleteLead,
+  deleteSearchGroup,
   getExtractionStatus,
   setExtractionStatus,
   enqueueSaveLead,
 } from './storage';
 import { navigateTabAndScrape, sendStartScrapingWithRetry } from './navigation';
 
-export type { Lead, ExtractionStatus } from '@/types/lead';
+export type { Lead, SearchGroup, ExtractionStatus } from '@/types/lead';
 
 // ── Tab Lifecycle Cleanups ───────────────────────────────────────────────────
 chrome.tabs.onRemoved.addListener(async (tabId) => {
@@ -93,7 +96,29 @@ chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
     return true;
   }
 
-  // ── GET_LEADS ─────────────────────────────────────────────────────────────
+  // ── GET_SEARCH_GROUPS ──────────────────────────────────────────────────────
+  if (req.type === 'GET_SEARCH_GROUPS') {
+    getSearchGroups().then((searchGroups) => sendResponse({ searchGroups }));
+    return true;
+  }
+
+  // ── DELETE_LEAD ────────────────────────────────────────────────────────────
+  if (req.type === 'DELETE_LEAD') {
+    deleteLead(req.groupId, req.leadId).then((searchGroups) => {
+      sendResponse({ status: 'ok', searchGroups });
+    });
+    return true;
+  }
+
+  // ── DELETE_SEARCH_GROUP ────────────────────────────────────────────────────
+  if (req.type === 'DELETE_SEARCH_GROUP') {
+    deleteSearchGroup(req.groupId).then((searchGroups) => {
+      sendResponse({ status: 'ok', searchGroups });
+    });
+    return true;
+  }
+
+  // ── GET_LEADS (Compatibility) ──────────────────────────────────────────────
   if (req.type === 'GET_LEADS') {
     getLeads().then((leads) => sendResponse({ leads }));
     return true;
@@ -118,11 +143,29 @@ chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
     return false;
   }
 
-  // ── EXPORT CSV (RFC 4180 + UTF-8 BOM) ─────────────────────────────────────
+  // ── EXPORT GROUP CSV ──────────────────────────────────────────────────────
+  if (req.type === 'EXPORT_GROUP_CSV') {
+    const success = exportCsv(req.leads || [], req.queryName, () => sendResponse({ status: 'ok' }));
+    if (!success) {
+      sendResponse({ status: 'error' });
+    }
+    return true;
+  }
+
+  // ── EXPORT GROUP XML ──────────────────────────────────────────────────────
+  if (req.type === 'EXPORT_GROUP_XML') {
+    const success = exportXml(req.leads || [], req.queryName, () => sendResponse({ status: 'ok' }));
+    if (!success) {
+      sendResponse({ status: 'error' });
+    }
+    return true;
+  }
+
+  // ── EXPORT CSV (All leads) ────────────────────────────────────────────────
   if (req.type === 'EXPORT_CSV') {
     (async () => {
       const leads = await getLeads();
-      const success = exportCsv(leads, () => sendResponse({ status: 'ok' }));
+      const success = exportCsv(leads, 'all', () => sendResponse({ status: 'ok' }));
       if (!success) {
         sendResponse({ status: 'error' });
       }
@@ -130,11 +173,11 @@ chrome.runtime.onMessage.addListener((req: any, _sender, sendResponse: any) => {
     return true;
   }
 
-  // ── EXPORT XML ────────────────────────────────────────────────────────────
+  // ── EXPORT XML (All leads) ────────────────────────────────────────────────
   if (req.type === 'EXPORT_XML') {
     (async () => {
       const leads = await getLeads();
-      const success = exportXml(leads, () => sendResponse({ status: 'ok' }));
+      const success = exportXml(leads, 'all', () => sendResponse({ status: 'ok' }));
       if (!success) {
         sendResponse({ status: 'error' });
       }

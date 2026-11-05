@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Lead, Status, ExtractionStatusResponse } from '@/types/lead';
+import type { SearchGroup, Status, ExtractionStatusResponse } from '@/types/lead';
 import { sendMessageWithRetry } from '@/lib/messaging';
 
 // Detect which platform is open in the active tab
@@ -14,11 +14,10 @@ export function useExtraction() {
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [query, setQuery] = useState('');
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [searchGroups, setSearchGroups] = useState<SearchGroup[]>([]);
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [platform, setPlatform] = useState('Unknown');
   const [tabId, setTabId] = useState<number | null>(null);
-  const [filterText, setFilterText] = useState('');
-  const [filterNoWebsiteOnly, setFilterNoWebsiteOnly] = useState(false);
 
   // ── Fetch active browser tab info ──────────────────────────────────────────
   useEffect(() => {
@@ -49,52 +48,81 @@ export function useExtraction() {
     });
   }, []);
 
-  // ── Load stored leads ─────────────────────────────────────────────────────
-  const refreshLeads = useCallback(() => {
-    sendMessageWithRetry({ type: 'GET_LEADS' }, (res) => {
-      if (res?.leads) setLeads(res.leads);
+  // ── Helper to update search groups and retain/set expanded group ──────────
+  const updateGroupsAndDefaultExpand = useCallback((groups: SearchGroup[]) => {
+    setSearchGroups(groups);
+    setExpandedGroupId((current) => {
+      if (current !== null && groups.some((g) => g.id === current)) {
+        return current;
+      }
+      return groups.length > 0 ? groups[0].id : null;
     });
   }, []);
 
+  // ── Load stored search groups ─────────────────────────────────────────────
+  const refreshSearchGroups = useCallback(() => {
+    sendMessageWithRetry({ type: 'GET_SEARCH_GROUPS' }, (res) => {
+      if (res?.searchGroups) {
+        updateGroupsAndDefaultExpand(res.searchGroups);
+      }
+    });
+  }, [updateGroupsAndDefaultExpand]);
+
   useEffect(() => {
-    refreshLeads();
-  }, [refreshLeads]);
+    refreshSearchGroups();
+  }, [refreshSearchGroups]);
 
   // ── Poll while extracting to reflect real-time lead counts ────────────────
   useEffect(() => {
     if (status !== 'extracting') return;
-    const id = setInterval(refreshLeads, 1500);
+    const id = setInterval(refreshSearchGroups, 1500);
     return () => clearInterval(id);
-  }, [status, refreshLeads]);
+  }, [status, refreshSearchGroups]);
 
   // ── Listen for messages from background/content ───────────────────────────
   useEffect(() => {
     const handler = (msg: any) => {
       if (msg.type === 'EXTRACTION_DONE') {
         setStatus('done');
-        refreshLeads();
+        refreshSearchGroups();
       }
       if (msg.type === 'EXTRACTION_ERROR') {
         setStatus('error');
         setErrorMsg(msg.message || 'Something went wrong.');
       }
+      if (msg.type === 'SEARCH_GROUPS_UPDATED') {
+        if (msg.searchGroups) {
+          updateGroupsAndDefaultExpand(msg.searchGroups);
+        } else {
+          refreshSearchGroups();
+        }
+      }
       if (msg.type === 'LEADS_UPDATED') {
-        refreshLeads();
+        refreshSearchGroups();
       }
     };
     chrome.runtime.onMessage.addListener(handler);
     return () => chrome.runtime.onMessage.removeListener(handler);
-  }, [refreshLeads]);
+  }, [refreshSearchGroups, updateGroupsAndDefaultExpand]);
 
   // ── Start extraction ──────────────────────────────────────────────────────
   const handleStart = () => {
     if (!query.trim()) return;
+    const trimmed = query.trim();
     setStatus('extracting');
     setErrorMsg('');
 
+    // Pre-expand group if it exists
+    const existing = searchGroups.find(
+      (g) => g.query.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existing) {
+      setExpandedGroupId(existing.id);
+    }
+
     const sendStartCmd = (targetTabId: number) => {
       sendMessageWithRetry(
-        { type: 'START_SEARCH', query: query.trim(), tabId: targetTabId },
+        { type: 'START_SEARCH', query: trimmed, tabId: targetTabId },
         (res) => {
           if (!res) {
             setStatus('error');
@@ -131,44 +159,51 @@ export function useExtraction() {
     }
   };
 
-  // ── Clear leads with prompt confirmation ──────────────────────────────────
-  const handleClear = () => {
-    if (leads.length === 0) return;
-    const confirmed = window.confirm('Are you sure you want to clear all extracted leads?');
-    if (!confirmed) return;
-
-    sendMessageWithRetry({ type: 'CLEAR_LEADS' }, () => {
-      setLeads([]);
-    });
-  };
-
-  // ── Exports ───────────────────────────────────────────────────────────────
-  const handleExportCSV = () => {
-    sendMessageWithRetry({ type: 'EXPORT_CSV' });
-  };
-
-  const handleExportXML = () => {
-    sendMessageWithRetry({ type: 'EXPORT_XML' });
-  };
-
-  // ── Filtered leads calculation ────────────────────────────────────────────
-  const filteredLeads = useMemo(() => {
-    const term = filterText.toLowerCase().trim();
-    return leads.filter((lead) => {
-      if (filterNoWebsiteOnly && lead.website) return false;
-      if (!term) return true;
-      if (term === 'no website' || term === 'missing website') {
-        return !lead.website;
+  // ── Delete single lead from group ────────────────────────────────────────
+  const handleDeleteLead = (groupId: string, leadId: string) => {
+    sendMessageWithRetry({ type: 'DELETE_LEAD', groupId, leadId }, (res) => {
+      if (res?.searchGroups) {
+        updateGroupsAndDefaultExpand(res.searchGroups);
+      } else {
+        refreshSearchGroups();
       }
-      return (
-        (lead.name || '').toLowerCase().includes(term) ||
-        (lead.phone || '').toLowerCase().includes(term) ||
-        (lead.email || '').toLowerCase().includes(term) ||
-        (lead.website || '').toLowerCase().includes(term) ||
-        (lead.address || '').toLowerCase().includes(term)
-      );
     });
-  }, [leads, filterText, filterNoWebsiteOnly]);
+  };
+
+  // ── Delete search group ──────────────────────────────────────────────────
+  const handleDeleteSearchGroup = (groupId: string) => {
+    sendMessageWithRetry({ type: 'DELETE_SEARCH_GROUP', groupId }, (res) => {
+      if (res?.searchGroups) {
+        updateGroupsAndDefaultExpand(res.searchGroups);
+      } else {
+        refreshSearchGroups();
+      }
+      if (expandedGroupId === groupId) {
+        setExpandedGroupId(null);
+      }
+    });
+  };
+
+  // ── Export group leads ───────────────────────────────────────────────────
+  const handleExportGroupCSV = (group: SearchGroup) => {
+    sendMessageWithRetry({
+      type: 'EXPORT_GROUP_CSV',
+      leads: group.leads,
+      queryName: group.query,
+    });
+  };
+
+  const handleExportGroupXML = (group: SearchGroup) => {
+    sendMessageWithRetry({
+      type: 'EXPORT_GROUP_XML',
+      leads: group.leads,
+      queryName: group.query,
+    });
+  };
+
+  const toggleExpandGroup = (groupId: string) => {
+    setExpandedGroupId((prev) => (prev === groupId ? null : groupId));
+  };
 
   const isExtracting = status === 'extracting';
   const platformColor =
@@ -180,30 +215,40 @@ export function useExtraction() {
       ? '#0a66c2'
       : '#6b7280';
 
-  const noWebsiteCount = useMemo(() => leads.filter((l) => !l.website).length, [leads]);
+  const totalLeadsCount = useMemo(
+    () => searchGroups.reduce((acc, g) => acc + g.leads.length, 0),
+    [searchGroups]
+  );
+
+  const activeGroupLeadsCount = useMemo(() => {
+    if (!query.trim()) return totalLeadsCount;
+    const match = searchGroups.find(
+      (g) => g.query.trim().toLowerCase() === query.trim().toLowerCase()
+    );
+    return match ? match.leads.length : 0;
+  }, [searchGroups, query, totalLeadsCount]);
 
   return {
     status,
     errorMsg,
     query,
     setQuery,
-    leads,
+    searchGroups,
+    expandedGroupId,
+    setExpandedGroupId,
+    toggleExpandGroup,
     platform,
     platformColor,
     tabId,
-    filterText,
-    setFilterText,
-    filterNoWebsiteOnly,
-    setFilterNoWebsiteOnly,
-    filteredLeads,
-    noWebsiteCount,
     isExtracting,
+    totalLeadsCount,
+    activeGroupLeadsCount,
     handleStart,
     handleStop,
-    handleClear,
-    handleExportCSV,
-    handleExportXML,
-    refreshLeads,
+    handleDeleteLead,
+    handleDeleteSearchGroup,
+    handleExportGroupCSV,
+    handleExportGroupXML,
+    refreshSearchGroups,
   };
 }
-

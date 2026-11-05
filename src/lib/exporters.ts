@@ -27,30 +27,58 @@ export function generateXml(leads: Lead[]): string {
   return xml;
 }
 
-export function exportCsv(leads: Lead[], callback?: () => void): boolean {
+export function sanitizeQueryForFilename(queryName?: string): string {
+  if (!queryName) return 'all';
+  const clean = queryName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 30);
+  return clean || 'search';
+}
+
+export function exportCsv(
+  leads: Lead[],
+  queryNameOrCallback?: string | (() => void),
+  callback?: () => void
+): boolean {
   if (!leads.length) return false;
+  const queryName = typeof queryNameOrCallback === 'string' ? queryNameOrCallback : undefined;
+  const cb = typeof queryNameOrCallback === 'function' ? queryNameOrCallback : callback;
   const csv = generateCsv(leads);
+  const cleanName = sanitizeQueryForFilename(queryName);
+  const filename = `leads_${cleanName}_${Date.now()}.csv`;
+
   chrome.downloads.download(
     {
       url: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
-      filename: `leads_${Date.now()}.csv`,
+      filename,
       saveAs: true,
     },
-    () => callback?.()
+    () => cb?.()
   );
   return true;
 }
 
-export function exportXml(leads: Lead[], callback?: () => void): boolean {
+export function exportXml(
+  leads: Lead[],
+  queryNameOrCallback?: string | (() => void),
+  callback?: () => void
+): boolean {
   if (!leads.length) return false;
+  const queryName = typeof queryNameOrCallback === 'string' ? queryNameOrCallback : undefined;
+  const cb = typeof queryNameOrCallback === 'function' ? queryNameOrCallback : callback;
   const xml = generateXml(leads);
+  const cleanName = sanitizeQueryForFilename(queryName);
+  const filename = `leads_${cleanName}_${Date.now()}.xml`;
+
   chrome.downloads.download(
     {
       url: 'data:application/xml;charset=utf-8,' + encodeURIComponent(xml),
-      filename: `leads_${Date.now()}.xml`,
+      filename,
       saveAs: true,
     },
-    () => callback?.()
+    () => cb?.()
   );
   return true;
 }

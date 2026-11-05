@@ -1,4 +1,5 @@
 import type { Lead } from '@/types/lead';
+import { generateLeadId } from '@/types/lead';
 import { EMAIL_REGEX, PHONE_REGEX, saveLead } from './domUtils';
 
 export async function scrapeGenericPage(): Promise<void> {
@@ -15,6 +16,7 @@ export async function scrapeGenericPage(): Promise<void> {
   if (window.location.hostname.includes('facebook.com')) source = 'Facebook';
   if (window.location.hostname.includes('linkedin.com')) source = 'LinkedIn';
   const lead: Lead = {
+    id: generateLeadId(),
     source,
     name: title.trim().substring(0, 100),
     phone: phones[0] || '',
@@ -24,4 +26,3 @@ export async function scrapeGenericPage(): Promise<void> {
   };
   if (lead.name && (lead.phone || lead.email)) saveLead(lead);
 }
-

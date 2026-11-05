@@ -127,6 +127,7 @@ assert.strictEqual(lead.name, 'Pet Bangla');
 assert.strictEqual(lead.phone, '01784000999');
 assert.strictEqual(lead.website, 'http://www.petbangla.com/');
 assert.strictEqual(lead.address, 'Road 10, Mirpur, Dhaka 1216');
+assert.ok(lead.id, 'lead must have an id');
 
 console.log('Testing extractFromDetailPanel on null pane (empty lead return, no body fallback)...');
 const empty = extractFromDetailPanel(null);
@@ -149,6 +150,7 @@ const fbLead = extractFromDetailPanel(fbPane);
 assert.strictEqual(fbLead.name, 'Pet Facebook Shop');
 assert.strictEqual(fbLead.website, '', 'Facebook link must leave website empty');
 assert.strictEqual(fbLead.facebook, 'https://www.facebook.com/petfacebookshop');
+assert.ok(fbLead.id, 'fbLead must have an id');
 
 console.log('DOM simulation test passed successfully!');
 

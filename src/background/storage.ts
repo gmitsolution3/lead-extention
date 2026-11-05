@@ -1,5 +1,5 @@
-import type { Lead, ExtractionStatus } from '@/types/lead';
-import { DEFAULT_EXTRACTION_STATUS } from '@/types/lead';
+import type { Lead, SearchGroup, ExtractionStatus } from '@/types/lead';
+import { DEFAULT_EXTRACTION_STATUS, generateLeadId } from '@/types/lead';
 import { normalizeUrl, extractFacebook } from '@/lib/url';
 import { enrichLeadEmail } from './enrichment';
 
@@ -11,19 +11,63 @@ export function enqueueTask<T>(task: () => Promise<T>): Promise<T> {
   return nextPromise;
 }
 
-export const getLeads = (): Promise<Lead[]> =>
-  new Promise((r) =>
-    chrome.storage.local.get(['leads'], (d) => r(((d.leads as Lead[]) || [])))
-  );
+export const getSearchGroups = (): Promise<SearchGroup[]> =>
+  new Promise((resolve) => {
+    chrome.storage.local.get(['searchGroups', 'leads'], async (d) => {
+      let groups = (d.searchGroups as SearchGroup[]) || [];
+      if (!Array.isArray(groups)) groups = [];
 
-export const saveLeads = (leads: Lead[]): Promise<void> =>
-  new Promise((r) => chrome.storage.local.set({ leads }, r));
+      // Automatic Migration from legacy flat leads
+      if (groups.length === 0 && d.leads && Array.isArray(d.leads) && d.leads.length > 0) {
+        const legacyLeads = d.leads as any[];
+        const migratedGroup: SearchGroup = {
+          id: 'legacy-default',
+          query: 'Previous Leads',
+          createdAt: Date.now(),
+          leads: legacyLeads.map((l, i) => ({
+            ...l,
+            id: l.id || `legacy-${i}-${Date.now()}`,
+          })),
+        };
+        groups = [migratedGroup];
+        await saveSearchGroups(groups);
+      }
+      resolve(groups);
+    });
+  });
 
-export const clearLeads = (): Promise<void> => {
+export const saveSearchGroups = (searchGroups: SearchGroup[]): Promise<void> =>
+  new Promise((r) => chrome.storage.local.set({ searchGroups }, r));
+
+export const getLeads = async (): Promise<Lead[]> => {
+  const groups = await getSearchGroups();
+  return groups.flatMap((g) => g.leads);
+};
+
+export const saveLeads = async (leads: Lead[]): Promise<void> => {
+  const groups = await getSearchGroups();
+  if (groups.length > 0) {
+    groups[0].leads = leads;
+    await saveSearchGroups(groups);
+  } else {
+    await saveSearchGroups([
+      {
+        id: 'default',
+        query: 'Direct Extraction',
+        createdAt: Date.now(),
+        leads: leads.map((l) => ({ ...l, id: l.id || generateLeadId() })),
+      },
+    ]);
+  }
+};
+
+export const clearSearchGroups = (): Promise<void> => {
   return enqueueTask(async () => {
-    await new Promise<void>((r) => chrome.storage.local.remove('leads', r));
+    await new Promise<void>((r) => chrome.storage.local.remove(['searchGroups', 'leads'], r));
   });
 };
+
+export const clearLeads = clearSearchGroups;
 
 export const getExtractionStatus = (): Promise<ExtractionStatus> =>
   new Promise((r) =>
@@ -102,18 +146,84 @@ export function isDuplicateLead(candidate: Lead, existingLeads: Lead[]): boolean
   return findDuplicateIndex(candidate, existingLeads) !== -1;
 }
 
+export function deleteLead(groupId: string, leadId: string): Promise<SearchGroup[]> {
+  return enqueueTask(async () => {
+    const groups = await getSearchGroups();
+    const targetGroup = groups.find((g) => g.id === groupId);
+    if (targetGroup) {
+      targetGroup.leads = targetGroup.leads.filter((l) => l.id !== leadId);
+      await saveSearchGroups(groups);
+      chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {
+        if (chrome.runtime.lastError) {
+          /* ignore */
+        }
+      });
+      chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads: groups.flatMap((g) => g.leads) }, () => {
+        if (chrome.runtime.lastError) {
+          /* ignore */
+        }
+      });
+    }
+    return groups;
+  });
+}
+
+export function deleteSearchGroup(groupId: string): Promise<SearchGroup[]> {
+  return enqueueTask(async () => {
+    let groups = await getSearchGroups();
+    groups = groups.filter((g) => g.id !== groupId);
+    await saveSearchGroups(groups);
+    chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {
+      if (chrome.runtime.lastError) {
+        /* ignore */
+      }
+    });
+    chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads: groups.flatMap((g) => g.leads) }, () => {
+      if (chrome.runtime.lastError) {
+        /* ignore */
+      }
+    });
+    return groups;
+  });
+}
+
 export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count: number }> {
   const task = async () => {
     if (!newLead || !newLead.name) {
-      const current = await getLeads();
-      return { status: 'ignored', count: current.length };
+      const current = await getSearchGroups();
+      const total = current.reduce((acc, g) => acc + g.leads.length, 0);
+      return { status: 'ignored', count: total };
     }
 
-    const leads = await getLeads();
-    const dupIndex = findDuplicateIndex(newLead, leads);
+    // 1. Assign ID if missing
+    if (!newLead.id) {
+      newLead.id = generateLeadId();
+    }
+
+    // 2. Determine active query
+    const status = await getExtractionStatus();
+    const activeQuery = (status.activeQuery || newLead.searchQuery || '').trim() || 'Direct Extraction';
+    newLead.searchQuery = activeQuery;
+
+    // 3. Locate or create target SearchGroup
+    const groups = await getSearchGroups();
+    let group = groups.find((g) => g.query.trim().toLowerCase() === activeQuery.toLowerCase());
+
+    if (!group) {
+      group = {
+        id: `group-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        query: activeQuery,
+        createdAt: Date.now(),
+        leads: [],
+      };
+      groups.unshift(group);
+    }
+
+    // 4. Duplicate detection and merging strictly within this group
+    const dupIndex = findDuplicateIndex(newLead, group.leads);
 
     if (dupIndex !== -1) {
-      const existing = leads[dupIndex];
+      const existing = group.leads[dupIndex];
       let changed = false;
       let websiteNewlyFilled = false;
 
@@ -149,8 +259,13 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
       }
 
       if (changed) {
-        await saveLeads(leads);
-        chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads }, () => {
+        await saveSearchGroups(groups);
+        chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {
+          if (chrome.runtime.lastError) {
+            /* ignore popup closed cleanly */
+          }
+        });
+        chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads: groups.flatMap((g) => g.leads) }, () => {
           if (chrome.runtime.lastError) {
             /* ignore popup closed cleanly */
           }
@@ -161,21 +276,32 @@ export function enqueueSaveLead(newLead: Lead): Promise<{ status: string; count:
           enrichLeadEmail(existing).catch(() => {});
         }
 
-        return { status: 'merged', count: leads.length };
+        return { status: 'merged', count: group.leads.length };
       }
 
-      return { status: 'duplicate', count: leads.length };
+      return { status: 'duplicate', count: group.leads.length };
     }
 
-    leads.push(newLead);
-    await saveLeads(leads);
+    group.leads.push(newLead);
+    await saveSearchGroups(groups);
+
+    chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {
+      if (chrome.runtime.lastError) {
+        /* ignore */
+      }
+    });
+    chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads: groups.flatMap((g) => g.leads) }, () => {
+      if (chrome.runtime.lastError) {
+        /* ignore */
+      }
+    });
 
     // Asynchronously enrich email if website is present and email is missing
     if (newLead.website && !extractFacebook(newLead.website) && !newLead.email) {
       enrichLeadEmail(newLead).catch(() => {});
     }
 
-    return { status: 'ok', count: leads.length };
+    return { status: 'ok', count: group.leads.length };
   };
 
   return enqueueTask(task);

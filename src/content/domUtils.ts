@@ -267,7 +267,18 @@ export function extractWebsiteFromElement(container: HTMLElement): string {
 
 // Save lead to background queue with proper error handling
 export function saveLead(lead: object) {
-  chrome.runtime.sendMessage({ type: 'SAVE_LEAD', payload: lead }, (res) => {
+  let detectedQuery = (lead as any).searchQuery;
+  if (!detectedQuery && typeof document !== 'undefined') {
+    const input = document.querySelector<HTMLInputElement>('#searchboxinput');
+    if (input?.value?.trim()) {
+      detectedQuery = input.value.trim();
+    } else if (typeof window !== 'undefined' && window.location) {
+      const m = window.location.href.match(/\/maps\/search\/([^/?#]+)/);
+      if (m) detectedQuery = decodeURIComponent(m[1].replace(/\+/g, ' ')).trim();
+    }
+  }
+  const payload = detectedQuery ? { ...lead, searchQuery: detectedQuery } : lead;
+  chrome.runtime.sendMessage({ type: 'SAVE_LEAD', payload }, (res) => {
     if (chrome.runtime.lastError) {
       console.warn('[LeadScraper] SAVE_LEAD error:', chrome.runtime.lastError.message);
     } else {

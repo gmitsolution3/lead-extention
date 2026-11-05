@@ -1,12 +1,13 @@
-import { Phone, Mail, Globe, MapPin, ChevronRight } from 'lucide-react';
+import { Phone, Mail, Globe, MapPin, ChevronRight, Trash2 } from 'lucide-react';
 import type { Lead } from '@/types/lead';
 
 interface LeadCardProps {
   lead: Lead;
   onClick?: () => void;
+  onDelete?: (leadId: string) => void;
 }
 
-export function LeadCard({ lead, onClick }: LeadCardProps) {
+export function LeadCard({ lead, onClick, onDelete }: LeadCardProps) {
   const noWebsite = !lead.website;
 
   return (
@@ -22,9 +23,24 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
         <div className="font-semibold text-zinc-100 text-sm leading-tight group-hover:text-white transition truncate">
           {lead.name}
         </div>
-        <div className="flex items-center gap-0.5 text-[10px] text-zinc-500 group-hover:text-brand font-medium shrink-0 transition">
-          <span>View details</span>
-          <ChevronRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+        <div className="flex items-center gap-1 shrink-0">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(lead.id);
+              }}
+              className="p-1 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors duration-150"
+              title="Delete lead"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <div className="flex items-center gap-0.5 text-[10px] text-zinc-500 group-hover:text-brand font-medium transition">
+            <span>View details</span>
+            <ChevronRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+          </div>
         </div>
       </div>
 

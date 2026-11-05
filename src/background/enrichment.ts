@@ -1,6 +1,6 @@
 import type { Lead } from '@/types/lead';
 import { normalizeUrl } from '@/lib/url';
-import { getLeads, saveLeads, extractPhoneDigits, enqueueTask } from './storage';
+import { getSearchGroups, saveSearchGroups, extractPhoneDigits, enqueueTask } from './storage';
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi;
 const IGNORED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif', '.js', '.css', '.woff', '.woff2'];
@@ -44,28 +44,40 @@ export async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<s
 
 export function enqueueUpdateLeadEmail(targetLead: Lead, discoveredEmail: string): Promise<void> {
   const task = async () => {
-    const leads = await getLeads();
+    const groups = await getSearchGroups();
     const targetDigits = extractPhoneDigits(targetLead.phone || '');
     const targetNormName = (targetLead.name || '').trim().toLowerCase();
     const targetCleanWeb = normalizeUrl(targetLead.website || '');
+    let updated = false;
 
-    const index = leads.findIndex((l) => {
-      const lDigits = extractPhoneDigits(l.phone || '');
-      const lNormName = (l.name || '').trim().toLowerCase();
-      const lCleanWeb = normalizeUrl(l.website || '');
+    for (const group of groups) {
+      const match = group.leads.find((l) => {
+        if (targetLead.id && l.id === targetLead.id) return true;
+        const lDigits = extractPhoneDigits(l.phone || '');
+        const lNormName = (l.name || '').trim().toLowerCase();
+        const lCleanWeb = normalizeUrl(l.website || '');
 
-      if (targetDigits && lDigits && targetDigits === lDigits) return true;
-      if (targetNormName && lNormName === targetNormName) {
-        if (targetCleanWeb && lCleanWeb && targetCleanWeb === lCleanWeb) return true;
+        if (targetDigits && lDigits && targetDigits === lDigits) return true;
+        if (targetNormName && lNormName === targetNormName) {
+          if (targetCleanWeb && lCleanWeb && targetCleanWeb === lCleanWeb) return true;
+        }
+        return false;
+      });
+
+      if (match && !match.email) {
+        match.email = discoveredEmail;
+        updated = true;
       }
-      return false;
-    });
+    }
 
-    if (index !== -1 && !leads[index].email) {
-      leads[index].email = discoveredEmail;
-      await saveLeads(leads);
-      console.log(`[BG] Enriched email for "${leads[index].name}": ${discoveredEmail}`);
-      chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads }, () => {
+    if (updated) {
+      await saveSearchGroups(groups);
+      chrome.runtime.sendMessage({ type: 'SEARCH_GROUPS_UPDATED', searchGroups: groups }, () => {
+        if (chrome.runtime.lastError) {
+          /* ignore popup closed error */
+        }
+      });
+      chrome.runtime.sendMessage({ type: 'LEADS_UPDATED', leads: groups.flatMap((g) => g.leads) }, () => {
         if (chrome.runtime.lastError) {
           /* ignore popup closed error */
         }

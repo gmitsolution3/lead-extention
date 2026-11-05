@@ -1,4 +1,5 @@
 import type { Lead } from '@/types/lead';
+import { generateLeadId } from '@/types/lead';
 import {
   waitFor,
   waitForPanelUpdate,
@@ -57,7 +58,7 @@ export function getPlaceId(href: string): string {
 
 // ── Extract full lead from detail panel ───────────────────────────────────
 export function extractFromDetailPanel(pane?: HTMLElement | null): Lead {
-  const emptyLead: Lead = { source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
+  const emptyLead: Lead = { id: '', source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
   if (!pane) return emptyLead;
 
   // Name
@@ -96,6 +97,7 @@ export function extractFromDetailPanel(pane?: HTMLElement | null): Lead {
   }
 
   return {
+    id: generateLeadId(),
     source: 'Google Maps',
     name,
     phone,
@@ -274,9 +276,9 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
         readyResult.rows.length > 0 &&
         !!readyResult.pane;
 
-      const detail = isVerified
+      const detail: Lead = isVerified
         ? extractFromDetailPanel(readyResult.pane)
-        : { source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
+        : { id: '', source: 'Google Maps', name: '', phone: '', email: '', website: '', address: '' };
 
       const finalName = (isVerified && detail.name) ? detail.name : cardName;
       const finalPhone = (isVerified && detail.phone) ? detail.phone : cardPhone;
@@ -290,6 +292,7 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
       const finalEmail = (isVerified && detail.email) ? detail.email : '';
 
       const lead: Lead = {
+        id: generateLeadId(),
         source: 'Google Maps',
         name: finalName,
         phone: finalPhone,

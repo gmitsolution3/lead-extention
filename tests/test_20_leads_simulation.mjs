@@ -24,19 +24,33 @@ const rawPlaces = [
   { name: 'Love For Pets Mirpur', ftid: '0x3755c55500066655:0x9990001112223334', phone: '01778901234', website: 'https://loveforpetsbd.com', address: 'Main Road 3, Mirpur 10' },
 ];
 
-let storageData = [];
+let storage = {};
 let debugLogs = [];
 
 globalThis.chrome = {
   storage: {
     local: {
-      get: (keys, cb) => cb({ leads: JSON.parse(JSON.stringify(storageData)) }),
+      get: (keys, cb) => {
+        const result = {};
+        if (Array.isArray(keys)) {
+          for (const k of keys) result[k] = storage[k];
+        } else if (typeof keys === 'string') {
+          result[keys] = storage[keys];
+        } else {
+          Object.assign(result, storage);
+        }
+        cb(JSON.parse(JSON.stringify(result)));
+      },
       set: (data, cb) => {
-        if (data.leads) storageData = JSON.parse(JSON.stringify(data.leads));
+        Object.assign(storage, JSON.parse(JSON.stringify(data)));
         cb?.();
       },
       remove: (keys, cb) => {
-        storageData = [];
+        if (Array.isArray(keys)) {
+          for (const k of keys) delete storage[k];
+        } else if (typeof keys === 'string') {
+          delete storage[keys];
+        }
         cb?.();
       },
     },
@@ -49,21 +63,31 @@ globalThis.chrome = {
   downloads: { download: (opts, cb) => cb?.() },
 };
 
-import { enqueueSaveLead, getLeads, clearLeads } from '../src/background/storage.ts';
+import {
+  enqueueSaveLead,
+  getSearchGroups,
+  clearSearchGroups,
+  setExtractionStatus,
+} from '../src/background/storage.ts';
 import { extractFacebook } from '../src/lib/url.ts';
 
 console.log('--- Simulating 20-Lead Scraper Run ---');
-await clearLeads();
+await clearSearchGroups();
+await setExtractionStatus({ isExtracting: true, activeQuery: 'mirpur 10 pet shop' });
 
 for (const place of rawPlaces) {
-  // Simulate scraper extraction logic
   const isVerified = true;
   const attempts = 1;
   const waitedMs = 750;
-  const rowIds = ['address', ...(place.phone ? ['phone:tel:' + place.phone] : []), ...(place.website ? ['authority'] : [])];
+  const rowIds = [
+    'address',
+    ...(place.phone ? ['phone:tel:' + place.phone] : []),
+    ...(place.website ? ['authority'] : []),
+  ];
 
   const isFb = Boolean(extractFacebook(place.website));
   const lead = {
+    id: '',
     source: 'Google Maps',
     name: place.name,
     phone: place.phone,
@@ -71,6 +95,7 @@ for (const place of rawPlaces) {
     website: isFb ? '' : place.website,
     address: place.address,
     facebook: isFb ? place.website : undefined,
+    searchQuery: 'mirpur 10 pet shop',
   };
 
   const source = {
@@ -92,8 +117,12 @@ for (const place of rawPlaces) {
   await enqueueSaveLead(lead);
 }
 
-const savedLeads = await getLeads();
-assert.strictEqual(savedLeads.length, 20, 'Should have exactly 20 leads saved');
+const groups = await getSearchGroups();
+assert.strictEqual(groups.length, 1, 'Should have exactly 1 search group created');
+assert.strictEqual(groups[0].query, 'mirpur 10 pet shop', 'Group query must match active query');
+
+const savedLeads = groups[0].leads;
+assert.strictEqual(savedLeads.length, 20, 'Should have exactly 20 leads saved in group');
 
 // Verify accuracy
 let withWebsite = 0;
@@ -106,6 +135,7 @@ for (let i = 0; i < savedLeads.length; i++) {
   const orig = rawPlaces[i];
   const isFb = Boolean(extractFacebook(orig.website));
 
+  assert.ok(saved.id, 'Every lead must have an assigned id');
   assert.strictEqual(saved.name, orig.name);
   assert.strictEqual(saved.phone, orig.phone);
   assert.strictEqual(saved.website, isFb ? '' : orig.website);
@@ -135,6 +165,7 @@ console.log('--- Testing re-run without clearing ---');
 for (const place of rawPlaces) {
   const isFb = Boolean(extractFacebook(place.website));
   const res = await enqueueSaveLead({
+    id: '',
     source: 'Google Maps',
     name: place.name,
     phone: place.phone,
@@ -142,15 +173,17 @@ for (const place of rawPlaces) {
     website: isFb ? '' : place.website,
     address: place.address,
     facebook: isFb ? place.website : undefined,
+    searchQuery: 'mirpur 10 pet shop',
   });
   assert.strictEqual(res.status, 'merged');
 }
 
-const leadsAfterRerun = await getLeads();
+const groupsAfterRerun = await getSearchGroups();
+assert.strictEqual(groupsAfterRerun.length, 1, 'Group count must remain 1');
+const leadsAfterRerun = groupsAfterRerun[0].leads;
 assert.strictEqual(leadsAfterRerun.length, 20, 'Lead count must not increase on duplicate run');
 assert.strictEqual(leadsAfterRerun[0].email, 'newemail@example.com', 'Empty field should be merged');
 assert.strictEqual(leadsAfterRerun[2].website, '', 'Facebook-only leads must retain empty website after merge');
 assert.strictEqual(leadsAfterRerun[2].facebook, 'https://www.facebook.com/dhakabirdhouse', 'Facebook link must be preserved on merge');
 
 console.log('20-lead benchmark test completed successfully!');
-

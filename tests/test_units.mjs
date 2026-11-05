@@ -1,17 +1,31 @@
 // Minimal browser/chrome mocks for Node environment
-let storedLeads = [];
+let storage = {};
 let sentMessages = [];
 
 globalThis.chrome = {
   storage: {
     local: {
-      get: (keys, cb) => cb({ leads: JSON.parse(JSON.stringify(storedLeads)) }),
+      get: (keys, cb) => {
+        const result = {};
+        if (Array.isArray(keys)) {
+          for (const k of keys) result[k] = storage[k];
+        } else if (typeof keys === 'string') {
+          result[keys] = storage[keys];
+        } else {
+          Object.assign(result, storage);
+        }
+        cb(JSON.parse(JSON.stringify(result)));
+      },
       set: (data, cb) => {
-        if (data.leads) storedLeads = JSON.parse(JSON.stringify(data.leads));
+        Object.assign(storage, JSON.parse(JSON.stringify(data)));
         cb?.();
       },
       remove: (keys, cb) => {
-        storedLeads = [];
+        if (Array.isArray(keys)) {
+          for (const k of keys) delete storage[k];
+        } else if (typeof keys === 'string') {
+          delete storage[keys];
+        }
         cb?.();
       },
     },
@@ -48,8 +62,12 @@ import {
   extractPhoneDigits,
   findDuplicateIndex,
   enqueueSaveLead,
-  clearLeads,
-  getLeads,
+  clearSearchGroups,
+  getSearchGroups,
+  saveSearchGroups,
+  deleteLead,
+  deleteSearchGroup,
+  setExtractionStatus,
 } from '../src/background/storage.ts';
 import { getScrollContainer, extractFromDetailPanel } from '../src/content/mapsScraper.ts';
 import {
@@ -122,33 +140,34 @@ assert.strictEqual(parseCardName('AB · 4.5 ★'), 'AB');
 // 7. findDuplicateIndex
 console.log('Testing findDuplicateIndex...');
 const existing = [
-  { source: 'Google Maps', name: 'Pet Bangla', phone: '01784000999', email: '', website: 'http://petbangla.com', address: 'Road 10, Mirpur', facebook: 'https://facebook.com/petbangla' },
-  { source: 'Google Maps', name: 'Dhaka Pet Zone', phone: '', email: '', website: 'https://dhakapet.com', address: 'Sector 4, Uttara' },
-  { source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Plot 5, Section 10, Mirpur 10, Dhaka 1216' },
+  { id: '1', source: 'Google Maps', name: 'Pet Bangla', phone: '01784000999', email: '', website: 'http://petbangla.com', address: 'Road 10, Mirpur', facebook: 'https://facebook.com/petbangla' },
+  { id: '2', source: 'Google Maps', name: 'Dhaka Pet Zone', phone: '', email: '', website: 'https://dhakapet.com', address: 'Sector 4, Uttara' },
+  { id: '3', source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Plot 5, Section 10, Mirpur 10, Dhaka 1216' },
 ];
 
 // Match by phone
-assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Different Name', phone: '01784-000999', email: '', website: '' }, existing), 0);
+assert.strictEqual(findDuplicateIndex({ id: 'c1', source: 'Google Maps', name: 'Different Name', phone: '01784-000999', email: '', website: '' }, existing), 0);
 
 // Match by Facebook URL
-assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Different Name FB', phone: '', email: '', website: '', facebook: 'https://facebook.com/petbangla' }, existing), 0);
+assert.strictEqual(findDuplicateIndex({ id: 'c2', source: 'Google Maps', name: 'Different Name FB', phone: '', email: '', website: '', facebook: 'https://facebook.com/petbangla' }, existing), 0);
 
 // Match by name + website
-assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Dhaka Pet Zone', phone: '', email: '', website: 'https://dhakapet.com' }, existing), 1);
+assert.strictEqual(findDuplicateIndex({ id: 'c3', source: 'Google Maps', name: 'Dhaka Pet Zone', phone: '', email: '', website: 'https://dhakapet.com' }, existing), 1);
 
 // Match by name + address
-assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Plot 5, Section 10, Mirpur 10, Dhaka 1216' }, existing), 2);
+assert.strictEqual(findDuplicateIndex({ id: 'c4', source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Plot 5, Section 10, Mirpur 10, Dhaka 1216' }, existing), 2);
 
 // Ensure empty string websites are not treated as duplicate matches
-assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Different Street 123' }, existing), -1);
+assert.strictEqual(findDuplicateIndex({ id: 'c5', source: 'Google Maps', name: 'Mirpur Birds & Pet', phone: '', email: '', website: '', address: 'Different Street 123' }, existing), -1);
 
 // Non-duplicate
-assert.strictEqual(findDuplicateIndex({ source: 'Google Maps', name: 'Brand New Shop', phone: '01999999999', email: '', website: 'https://newshop.com' }, existing), -1);
+assert.strictEqual(findDuplicateIndex({ id: 'c6', source: 'Google Maps', name: 'Brand New Shop', phone: '01999999999', email: '', website: 'https://newshop.com' }, existing), -1);
 
 // 8. generateCsv & generateXml (checking Facebook column at end)
 console.log('Testing generateCsv & generateXml...');
 const sampleLeads = [
   {
+    id: 'l1',
     source: 'Google Maps',
     name: 'Pet Bangla',
     phone: '01784000999',
@@ -158,6 +177,7 @@ const sampleLeads = [
     facebook: 'https://facebook.com/petbangla',
   },
   {
+    id: 'l2',
     source: 'Google Maps',
     name: 'No Web Shop',
     phone: '01700000000',
@@ -178,12 +198,31 @@ assert.ok(xml.includes('<name>Pet Bangla</name>'));
 assert.ok(xml.includes('<facebook>https://facebook.com/petbangla</facebook>'));
 assert.ok(xml.includes('<facebook></facebook>'));
 
-// 9. enqueueSaveLead & Merging behavior
-console.log('Testing enqueueSaveLead & Merging behavior...');
-await clearLeads();
+// 9. Storage, SearchGroups, Migration, and Scoped Deduplication
+console.log('Testing SearchGroups, migration & scoped deduplication...');
+await clearSearchGroups();
 
-// 9.1: Save partial lead (only name + phone)
+// 9.1: Automatic migration from legacy leads
+storage = {
+  leads: [
+    { source: 'Google Maps', name: 'Legacy Lead 1', phone: '01711111111', email: '', website: '' },
+    { source: 'Google Maps', name: 'Legacy Lead 2', phone: '01722222222', email: '', website: '' },
+  ],
+};
+const migrated = await getSearchGroups();
+assert.strictEqual(migrated.length, 1, 'Should migrate legacy leads into 1 SearchGroup');
+assert.strictEqual(migrated[0].query, 'Previous Leads');
+assert.strictEqual(migrated[0].leads.length, 2);
+assert.ok(migrated[0].leads[0].id, 'Migrated leads must have IDs assigned');
+
+// Clear storage for fresh test
+await clearSearchGroups();
+
+// 9.2: Save leads under query "pet shop mirpur 10"
+await setExtractionStatus({ isExtracting: true, activeQuery: 'pet shop mirpur 10' });
+
 const res1 = await enqueueSaveLead({
+  id: '',
   source: 'Google Maps',
   name: 'Pet Bangla',
   phone: '01784-000999',
@@ -194,9 +233,10 @@ const res1 = await enqueueSaveLead({
 assert.strictEqual(res1.status, 'ok');
 assert.strictEqual(res1.count, 1);
 
-// 9.2: Duplicate with website and address added -> should merge
+// 9.3: Merging duplicate within the same group
 sentMessages = [];
 const res2 = await enqueueSaveLead({
+  id: '',
   source: 'Google Maps',
   name: 'Pet Bangla',
   phone: '01784000999',
@@ -208,39 +248,53 @@ const res2 = await enqueueSaveLead({
 assert.strictEqual(res2.status, 'merged');
 assert.strictEqual(res2.count, 1);
 
-const leadsAfterMerge = await getLeads();
-assert.strictEqual(leadsAfterMerge.length, 1);
-assert.strictEqual(leadsAfterMerge[0].phone, '01784-000999', 'original phone should be preserved');
-assert.strictEqual(leadsAfterMerge[0].website, 'http://www.petbangla.com/');
-assert.strictEqual(leadsAfterMerge[0].address, 'House 1, Road 10, Mirpur');
-assert.strictEqual(leadsAfterMerge[0].facebook, 'https://facebook.com/petbangla');
-assert.ok(sentMessages.some((m) => m.type === 'LEADS_UPDATED'), 'LEADS_UPDATED should be broadcast');
+let groups = await getSearchGroups();
+assert.strictEqual(groups.length, 1);
+assert.strictEqual(groups[0].query, 'pet shop mirpur 10');
+assert.strictEqual(groups[0].leads.length, 1);
+assert.strictEqual(groups[0].leads[0].website, 'http://www.petbangla.com/');
+assert.strictEqual(groups[0].leads[0].address, 'House 1, Road 10, Mirpur');
+assert.strictEqual(groups[0].leads[0].facebook, 'https://facebook.com/petbangla');
+assert.ok(sentMessages.some((m) => m.type === 'SEARCH_GROUPS_UPDATED'));
 
-// 9.3: Exact duplicate with no new fields -> should return duplicate status without changing
-sentMessages = [];
-const res3 = await enqueueSaveLead({
+// 9.4: Cross-group isolation test:
+// Switch active query to "schools in mirpur". Even with identical phone/name,
+// it belongs to a different search group and must NOT merge into "pet shop mirpur 10"!
+await setExtractionStatus({ isExtracting: true, activeQuery: 'schools in mirpur' });
+
+const resSchool = await enqueueSaveLead({
+  id: '',
   source: 'Google Maps',
   name: 'Pet Bangla',
-  phone: '01784000999',
+  phone: '01784-000999',
   email: '',
   website: 'http://www.petbangla.com/',
-  address: 'House 1, Road 10, Mirpur',
 });
-assert.strictEqual(res3.status, 'duplicate');
-assert.strictEqual(res3.count, 1);
-assert.strictEqual(sentMessages.length, 0, 'No broadcast if unchanged');
+assert.strictEqual(resSchool.status, 'ok', 'Should create a new lead in the new search group');
+assert.strictEqual(resSchool.count, 1);
 
-// 9.4: Add new unique lead
-const res4 = await enqueueSaveLead({
-  source: 'Google Maps',
-  name: 'Bengal Birds',
-  phone: '01811111111',
-  email: '',
-  website: '',
-  address: 'Mirpur 1',
-});
-assert.strictEqual(res4.status, 'ok');
-assert.strictEqual(res4.count, 2);
+groups = await getSearchGroups();
+assert.strictEqual(groups.length, 2, 'Should have 2 distinct search groups');
+assert.strictEqual(groups[0].query, 'schools in mirpur');
+assert.strictEqual(groups[1].query, 'pet shop mirpur 10');
+assert.strictEqual(groups[0].leads.length, 1);
+assert.strictEqual(groups[1].leads.length, 1);
+
+// 9.5: Delete single lead from group
+console.log('Testing deleteLead...');
+const schoolGroupId = groups[0].id;
+const schoolLeadId = groups[0].leads[0].id;
+assert.ok(schoolLeadId, 'Lead must have a valid ID');
+
+const afterLeadDelete = await deleteLead(schoolGroupId, schoolLeadId);
+const targetGroup = afterLeadDelete.find((g) => g.id === schoolGroupId);
+assert.strictEqual(targetGroup.leads.length, 0, 'Target group lead must be deleted');
+
+// 9.6: Delete search group by ID
+console.log('Testing deleteSearchGroup...');
+const afterGroupDelete = await deleteSearchGroup(schoolGroupId);
+assert.strictEqual(afterGroupDelete.length, 1, 'Only 1 search group should remain');
+assert.strictEqual(afterGroupDelete[0].query, 'pet shop mirpur 10');
 
 // 10. getScrollContainer
 console.log('Testing getScrollContainer...');
@@ -271,6 +325,7 @@ const mockFbPane = {
 const fbLead = extractFromDetailPanel(mockFbPane);
 assert.strictEqual(fbLead.website, '', 'Facebook link should not be assigned to website');
 assert.strictEqual(fbLead.facebook, 'https://www.facebook.com/petbangla', 'Facebook link should be assigned to facebook');
+assert.ok(fbLead.id, 'extractFromDetailPanel must assign a lead ID');
 
 const mockWebPane = {
   getAttribute: (attr) => (attr === 'aria-label' ? 'Pet Bangla Web' : null),
@@ -285,5 +340,6 @@ const mockWebPane = {
 const webLead = extractFromDetailPanel(mockWebPane);
 assert.strictEqual(webLead.website, 'http://petbangla.com/', 'Regular website should be assigned to website');
 assert.strictEqual(webLead.facebook, undefined, 'Regular website should not populate facebook');
+assert.ok(webLead.id, 'extractFromDetailPanel must assign a lead ID');
 
 console.log('All tests passed successfully!');
