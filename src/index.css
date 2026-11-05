@@ -66,7 +66,7 @@
     @apply border-border;
   }
   body {
-    background-color: transparent;
+    background-color: var(--color-canvas);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     margin: 0;
@@ -74,8 +74,11 @@
     overflow: hidden;
   }
   html {
-    @apply font-sans bg-transparent;
-    background-color: transparent;
+    @apply font-sans;
+    background-color: var(--color-canvas);
+  }
+  #root {
+    background-color: var(--color-canvas);
   }
   ::selection {
     background-color: var(--color-brand);

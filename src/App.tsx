@@ -33,7 +33,7 @@ function App() {
   } = useExtraction();
 
   return (
-    <div className="w-[420px] min-h-[580px] bg-canvas text-zinc-100 font-sans flex flex-col antialiased selection:bg-brand selection:text-black rounded-2xl overflow-hidden border border-border shadow-2xl relative">
+    <div className="w-[420px] min-h-[580px] bg-canvas text-zinc-100 font-sans flex flex-col antialiased selection:bg-brand selection:text-black relative">
       <Header platform={platform} platformColor={platformColor} />
 
       <SearchControls

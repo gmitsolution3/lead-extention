@@ -130,7 +130,7 @@ export function LeadDetailModal({ lead, isOpen, onClose }: LeadDetailModalProps)
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs animate-in fade-in rounded-2xl" />
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs animate-in fade-in" />
         <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface border border-border p-5 text-zinc-100 shadow-2xl animate-in fade-in zoom-in-95 outline-none flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
