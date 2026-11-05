@@ -57,6 +57,23 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
           </div>
         )}
 
+        {lead.facebook && (
+          <div className="flex items-center gap-2 text-xs text-blue-400 truncate min-w-0">
+            <svg
+              className="h-3.5 w-3.5 shrink-0 text-blue-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+            </svg>
+            <span className="truncate">{lead.facebook.replace(/^https?:\/\/(www\.)?/, '')}</span>
+          </div>
+        )}
+
         {lead.address && (
           <div className="flex items-center gap-2 text-xs text-zinc-400 truncate">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-zinc-500" />

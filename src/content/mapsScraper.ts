@@ -24,6 +24,24 @@ export {
 
 export const DEBUG = true;
 
+// Detect actual scrollable container dynamically
+export function getScrollContainer(el: HTMLElement): HTMLElement {
+  let current: HTMLElement | null = el;
+  const docBody = typeof document !== 'undefined' ? document.body : null;
+  while (current && current !== docBody) {
+    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+      const style = window.getComputedStyle(current);
+      const overflowY = style.overflowY;
+      const isScrollable = (overflowY === 'auto' || overflowY === 'scroll') && current.scrollHeight > current.clientHeight;
+      if (isScrollable) return current;
+    } else {
+      if (current.scrollHeight > current.clientHeight) return current;
+    }
+    current = current.parentElement;
+  }
+  return el.scrollHeight > el.clientHeight ? el : (el.parentElement as HTMLElement) || el;
+}
+
 // Extract place ID from Google Maps URL for reliable tracking
 export function getPlaceId(href: string): string {
   const ftid = getFtid(href);
@@ -125,6 +143,8 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
     return;
   }
 
+  const scrollContainer = getScrollContainer(feed as HTMLElement);
+
   await jitter(1000, 1500);
 
   // Track processed places by their unique place-ID in href
@@ -133,9 +153,9 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
   let lastScrollTop = -1;
 
   while (checkActive()) {
-    // Collect unprocessed result cards directly from feed
+    // Collect unprocessed result cards directly from scrollContainer
     const allAnchors = Array.from(
-      feed.querySelectorAll<HTMLAnchorElement>('a[href*="/maps/place/"]')
+      scrollContainer.querySelectorAll<HTMLAnchorElement>('a[href*="/maps/place/"]')
     );
 
     // Deduplicate by extracting the place CID/ID from the URL
@@ -148,16 +168,16 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
 
     if (newAnchors.length === 0) {
       // Humanized dynamic scroll increment (400px–750px)
-      const currentScroll = feed.scrollTop;
+      const currentScroll = scrollContainer.scrollTop;
       const scrollDelta = Math.floor(Math.random() * (750 - 400 + 1)) + 400;
-      feed.scrollTop += scrollDelta;
+      scrollContainer.scrollTop += scrollDelta;
       await jitter(1500, 2200);
 
       if (!checkActive()) break;
 
-      if (Math.abs(feed.scrollTop - currentScroll) < 10 || feed.scrollTop === lastScrollTop) {
+      if (Math.abs(scrollContainer.scrollTop - currentScroll) < 10 || scrollContainer.scrollTop === lastScrollTop) {
         stuckCount++;
-        const endText = feed.textContent || '';
+        const endText = scrollContainer.textContent || '';
         if (
           endText.includes("You've reached the end") ||
           endText.includes('তালিকায় আর কোনো স্থান নেই') ||
@@ -169,7 +189,7 @@ export async function scrapeGoogleMaps(checkActive: () => boolean): Promise<void
       } else {
         stuckCount = 0;
       }
-      lastScrollTop = feed.scrollTop;
+      lastScrollTop = scrollContainer.scrollTop;
       continue;
     }
 

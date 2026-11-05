@@ -51,6 +51,7 @@ import {
   clearLeads,
   getLeads,
 } from '../src/background/storage.ts';
+import { getScrollContainer } from '../src/content/mapsScraper.ts';
 import {
   generateCsv,
   generateXml,
@@ -112,6 +113,11 @@ assert.strictEqual(cleanAddressText('Address: Road 10, Mirpur, Dhaka'), 'Road 10
 assert.strictEqual(cleanAddressText('ঠিকানা: রোড ১০, মিরপুর, ঢাকা'), 'রোড ১০, মিরপুর, ঢাকা');
 assert.strictEqual(parseCardName('Pet Bangla · 4.5 ★ (120) · Pet store'), 'Pet Bangla');
 assert.strictEqual(parseCardName('Pet Bangla\nMirpur 10'), 'Pet Bangla');
+assert.strictEqual(parseCardName('A • B Studios'), 'A • B Studios');
+assert.strictEqual(parseCardName('A • B Studios · 4.9 ★ (85)'), 'A • B Studios');
+assert.strictEqual(parseCardName('A • B'), 'A • B');
+assert.strictEqual(parseCardName('পেট বাংলা · ৪.৫ ★ (১২০) · পেট শপ'), 'পেট বাংলা');
+assert.strictEqual(parseCardName('AB · 4.5 ★'), 'AB');
 
 // 7. findDuplicateIndex
 console.log('Testing findDuplicateIndex...');
@@ -229,5 +235,19 @@ const res4 = await enqueueSaveLead({
 });
 assert.strictEqual(res4.status, 'ok');
 assert.strictEqual(res4.count, 2);
+
+// 10. getScrollContainer
+console.log('Testing getScrollContainer...');
+const dummyFeed = {
+  scrollHeight: 500,
+  clientHeight: 500,
+  parentElement: {
+    scrollHeight: 1000,
+    clientHeight: 600,
+    parentElement: null,
+  },
+};
+const foundContainer = getScrollContainer(dummyFeed);
+assert.strictEqual(foundContainer, dummyFeed.parentElement);
 
 console.log('All tests passed successfully!');

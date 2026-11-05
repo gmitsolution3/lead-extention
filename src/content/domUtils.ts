@@ -124,21 +124,60 @@ export async function waitForPanelUpdate(
   return false;
 }
 
-// ── Clean Name Parser (replaces broken double split) ──────────────────────
+const METADATA_WORDS_REGEX = /\b(?:reviews?|rating|stars?|closed|open|hours?|store|shop|restaurant|hotel|cafe|clinic|hospital|service|center|centre|agency|market|supermarket|bakery|gym|salon|spa|school|college|bank|pharmacy|vet|veterinary|supplier|office|doctor)\b/i;
+const BENGALI_METADATA_REGEX = /(?:রিভিউ|রেটিং|খোলা|বন্ধ|দোকান|শপ|স্টোর|হাসপাতাল|ক্লিনিক|রেস্টুরেন্ট|মার্কেট)/;
+
+export function isMetadataSegment(segment: string): boolean {
+  const s = segment.trim();
+  return (
+    /[★☆]/.test(s) ||
+    /\b\d(?:\.\d)?\s*(\([\d,]+\))?/.test(s) ||
+    /[০-৯](?:\.[০-৯])?/.test(s) ||
+    /\([\d,]+\)/.test(s) ||
+    /\([০-৯,]+\)/.test(s) ||
+    METADATA_WORDS_REGEX.test(s) ||
+    BENGALI_METADATA_REGEX.test(s)
+  );
+}
+
+// ── Clean Name Parser (bullet-safe & metadata-aware) ──────────────────────
 export function parseCardName(rawText: string): string {
   if (!rawText) return '';
-  // Google Maps separates card title from rating/category with middle dot, bullet, or pipe
-  const firstChunk = rawText.split(/[·•|\n]/)[0].trim();
+  // 1. First split by newline to get the primary line
+  const firstLine = rawText.split(/\r?\n/)[0].trim();
+  if (!firstLine) return '';
 
-  // Strip ratings, review counts, stars if present in the chunk
-  const cleaned = firstChunk
-    .replace(/★\s*[\d.]+/g, '')
+  // 2. Only split on ·, •, or | if the following segment resembles Google Maps rating/category metadata
+  const delimiterRegex = /[·•|]/g;
+  let match: RegExpExecArray | null;
+  let candidate = firstLine;
+
+  while ((match = delimiterRegex.exec(firstLine)) !== null) {
+    const after = firstLine.slice(match.index + 1);
+    const nextChunk = after.split(/[·•|]/)[0];
+    if (isMetadataSegment(nextChunk)) {
+      candidate = firstLine.slice(0, match.index).trim();
+      break;
+    }
+  }
+
+  // 3. If the resulting first segment is shorter than 3 characters, preserve the full original line text
+  if (candidate.length < 3) {
+    candidate = firstLine;
+  }
+
+  // 4. Strip star ratings, reviews (\d+), and extra whitespace, keeping Bengali character support intact
+  const cleaned = candidate
+    .replace(/[★☆]\s*[\d.০-৯]+/g, '')
+    .replace(/[★☆]/g, '')
     .replace(/\b\d\.\d\s*(\([\d,]+\))?/g, '')
-    .replace(/\([\d,]+\)/g, '')
+    .replace(/[০-৯]\.[০-৯]\s*(\([০-৯,]+\))?/g, '')
+    .replace(/\([\d,০-৯]+\)/g, '')
+    .replace(/[·•|\s]+$/, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  return cleaned || firstChunk;
+  return cleaned || candidate || firstLine;
 }
 
 // ── Clean address text helper ─────────────────────────────────────────────
