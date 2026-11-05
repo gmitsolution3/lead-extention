@@ -3,7 +3,7 @@ This file is a merged representation of the entire codebase, combined into a sin
 <file_summary>
 This section contains a summary of this file.
 
-<purpose>
+<purpose> 
 This file contains a packed representation of the entire repository's contents.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
@@ -1363,7 +1363,8 @@ dist-ssr
   - JSON import "./manifest.json" without import attributes (vite.config.ts:5:22). Add `with { type: 'json' }`
 Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
 [36mvite v8.2.1 [32mbuilding client environment for production...[36m[39m
-[2Ktransforming...✓ 1798 modules transformed.
+[2K
+transforming...✓ 1798 modules transformed.
 [33m[lightningcss minify] Unknown at rule: @theme
 1  |  ...translate-y{syntax:"*";inherits:false;initial-value:0}@theme inline{--animation-delay-0: 0s; --animation-delay-75:...
    |                                                                 ^
